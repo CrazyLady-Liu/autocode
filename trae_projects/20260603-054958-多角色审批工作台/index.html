@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>多角色审批工作台</title>
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <link rel="stylesheet" href="https://unpkg.com/@element-plus/icons-vue/dist/index.css">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus"></script>
+  <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #app { height: 100%; width: 100%; }
+    .layout { height: 100%; display: flex; flex-direction: column; }
+    .header { 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .header-title { font-size: 20px; font-weight: 600; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .main { flex: 1; display: flex; overflow: hidden; }
+    .sidebar { 
+      width: 220px; 
+      background: #f5f7fa; 
+      border-right: 1px solid #e4e7ed;
+      overflow-y: auto;
+    }
+    .content { flex: 1; overflow: auto; padding: 20px; background: #f0f2f5; }
+    .card { 
+      background: white; 
+      border-radius: 8px; 
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .card-title { 
+      font-size: 16px; 
+      font-weight: 600; 
+      margin-bottom: 16px;
+      color: #303133;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stat-card { 
+      display: flex; 
+      align-items: center; 
+      padding: 20px; 
+      border-radius: 8px;
+      color: white;
+    }
+    .stat-icon { 
+      width: 60px; 
+      height: 60px; 
+      border-radius: 50%; 
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      margin-right: 16px;
+    }
+    .stat-info { flex: 1; }
+    .stat-value { font-size: 28px; font-weight: 600; }
+    .stat-label { font-size: 14px; opacity: 0.9; }
+    .flow-node { 
+      display: flex; 
+      align-items: center; 
+      padding: 12px 20px; 
+      border: 2px solid #dcdfe6;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      background: #fafafa;
+      position: relative;
+    }
+    .flow-node.active { 
+      border-color: #409eff; 
+      background: #ecf5ff;
+    }
+    .flow-node.approved { 
+      border-color: #67c23a; 
+      background: #f0f9eb;
+    }
+    .flow-node.rejected { 
+      border-color: #f56c6c; 
+      background: #fef0f0;
+    }
+    .flow-node::after {
+      content: '';
+      position: absolute;
+      bottom: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 12px;
+      background: #dcdfe6;
+    }
+    .flow-node:last-child::after { display: none; }
+    .node-avatar { 
+      width: 40px; 
+      height: 40px; 
+      border-radius: 50%; 
+      background: #409eff;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      margin-right: 12px;
+    }
+    .node-info { flex: 1; }
+    .node-title { font-weight: 600; color: #303133; }
+    .node-desc { font-size: 12px; color: #909399; margin-top: 4px; }
+    .node-status { padding: 4px 12px; border-radius: 4px; font-size: 12px; }
+    .role-permission { 
+      display: flex; 
+      align-items: center; 
+      padding: 12px;
+      border: 1px solid #ebeef5;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .role-avatar { 
+      width: 48px; 
+      height: 48px; 
+      border-radius: 8px; 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-right: 16px;
+    }
+    .role-info { flex: 1; }
+    .role-name { font-weight: 600; font-size: 15px; }
+    .role-desc { font-size: 13px; color: #606266; margin-top: 4px; }
+    .log-item { 
+      display: flex; 
+      padding: 12px 0; 
+      border-bottom: 1px solid #ebeef5;
+    }
+    .log-item:last-child { border-bottom: none; }
+    .log-time { 
+      width: 100px; 
+      color: #909399; 
+      font-size: 12px;
+    }
+    .log-user { 
+      width: 80px; 
+      color: #409eff; 
+      font-weight: 500;
+    }
+    .log-action { flex: 1; }
+    .log-type { 
+      padding: 2px 8px; 
+      border-radius: 4px; 
+      font-size: 12px;
+      margin-right: 8px;
+    }
+    .chart-container { height: 300px; width: 100%; }
+    .alert-banner { 
+      padding: 12px 16px; 
+      border-radius: 6px; 
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .alert-error { background: #fef0f0; border: 1px solid #fde2e2; color: #f56c6c; }
+    .alert-warning { background: #fdf6ec; border: 1px solid #faecd8; color: #e6a23c; }
+    .alert-info { background: #ecf5ff; border: 1px solid #d9ecff; color: #409eff; }
+    .menu-item { 
+      padding: 14px 24px; 
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #606266;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+    .menu-item:hover { background: #e4e7ed; color: #303133; }
+    .menu-item.active { 
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 500;
+    }
+    .menu-icon { font-size: 18px; }
+    .user-avatar { 
+      width: 36px; 
+      height: 36px; 
+      border-radius: 50%; 
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+    .badge-dot { 
+      position: relative;
+    }
+    .badge-dot::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 8px;
+      height: 8px;
+      background: #f56c6c;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="layout">
+      <div class="header">
+        <div class="header-left">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="white">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+          <span class="header-title">多角色审批工作台</span>
+          <el-tag size="small" type="info" effect="dark">v1.0</el-tag>
+        </div>
+        <div class="header-right">
+          <el-badge :value="alertCount" class="badge-dot">
+            <el-button type="primary" :icon="Bell" circle @click="showAlerts = true" style="background: rgba(255,255,255,0.2); border: none;"></el-button>
+          </el-badge>
+          <span>{{ currentUser.name }}</span>
+          <div class="user-avatar">{{ currentUser.name.charAt(0) }}</div>
+          <el-dropdown @command="handleUserCommand">
+            <span style="cursor: pointer; color: white;">
+              <el-icon><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+      </div>
+      
+      <div class="main">
+        <div class="sidebar">
+          <div style="padding: 16px 0;">
+            <div v-for="menu in menus" :key="menu.key" 
+                 :class="['menu-item', { active: currentMenu === menu.key }]"
+                 @click="currentMenu = menu.key">
+              <span class="menu-icon">
+                <component :is="menu.icon" />
+              </span>
+              <span>{{ menu.label }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="content">
+          <div v-if="currentMenu === 'dashboard'">
+            <el-row :gutter="20" style="margin-bottom: 20px;">
+              <el-col :span="6">
+                <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                  <div class="stat-icon">📋</div>
+                  <div class="stat-info">
+                    <div class="stat-value">{{ stats.total }}</div>
+                    <div class="stat-label">申请总数</div>
+                  </div>
+                </div>
+              </el-col>
+              <el-col :span="6">
+                <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                  <div class="stat-icon">⏳</div>
+                  <div class="stat-info">
+                    <div class="stat-value">{{ stats.pending }}</div>
+                    <div class="stat-label">待我审批</div>
+                  </div>
+                </div>
+              </el-col>
+              <el-col :span="6">
+                <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                  <div class="stat-icon">✅</div>
+                  <div class="stat-info">
+                    <div class="stat-value">{{ stats.approved }}</div>
+                    <div class="stat-label">已通过</div>
+                  </div>
+                </div>
+              </el-col>
+              <el-col :span="6">
+                <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                  <div class="stat-icon">📊</div>
+                  <div class="stat-info">
+                    <div class="stat-value">{{ stats.completionRate }}%</div>
+                    <div class="stat-label">完成率</div>
+                  </div>
+                </div>
+              </el-col>
+            </el-row>
+            
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <div class="card">
+                  <div class="card-title">📈 申请趋势统计</div>
+                  <div ref="trendChart" class="chart-container"></div>
+                </div>
+              </el-col>
+              <el-col :span="12">
+                <div class="card">
+                  <div class="card-title">🥧 申请类型分布</div>
+                  <div ref="typeChart" class="chart-container"></div>
+                </div>
+              </el-col>
+            </el-row>
+            
+            <div class="card" style="margin-top: 20px;">
+              <div class="card-title">⏰ 最近待审批</div>
+              <el-table :data="pendingList.slice(0, 5)" style="width: 100%">
+                <el-table-column prop="title" label="申请标题" min-width="200"></el-table-column>
+                <el-table-column prop="type" label="类型" width="100">
+                  <template #default="{ row }">
+                    <el-tag size="small" :type="getTypeTagType(row.type)">{{ row.type }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="applicant" label="申请人" width="100"></el-table-column>
+                <el-table-column prop="createTime" label="申请时间" width="160"></el-table-column>
+                <el-table-column label="操作" width="150" fixed="right">
+                  <template #default="{ row }">
+                    <el-button size="small" type="primary" @click="viewApplication(row)">查看</el-button>
+                    <el-button size="small" type="success" @click="quickApprove(row)">审批</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
+          
+          <div v-if="currentMenu === 'applications'">
+            <div class="card">
+              <div class="card-title">📋 申请列表</div>
+              <div style="margin-bottom: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+                <el-input v-model="searchKeyword" placeholder="搜索申请标题或申请人" style="width: 240px;" clearable>
+                  <template #prefix>
+                    <el-icon><Search /></el-icon>
+                  </template>
+                </el-input>
+                <el-select v-model="filterStatus" placeholder="审批状态" style="width: 140px;" clearable>
+                  <el-option label="待审批" value="pending"></el-option>
+                  <el-option label="审批中" value="processing"></el-option>
+                  <el-option label="已通过" value="approved"></el-option>
+                  <el-option label="已驳回" value="rejected"></el-option>
+                </el-select>
+                <el-select v-model="filterType" placeholder="申请类型" style="width: 140px;" clearable>
+                  <el-option label="请假" value="请假"></el-option>
+                  <el-option label="报销" value="报销"></el-option>
+                  <el-option label="采购" value="采购"></el-option>
+                  <el-option label="出差" value="出差"></el-option>
+                </el-select>
+                <el-button type="primary" @click="openCreateDialog">
+                  <el-icon style="margin-right: 4px;"><Plus /></el-icon>
+                  新建申请
+                </el-button>
+              </div>
+              <el-table :data="filteredApplications" style="width: 100%" v-loading="loading">
+                <el-table-column type="selection" width="55"></el-table-column>
+                <el-table-column prop="id" label="申请编号" width="120"></el-table-column>
+                <el-table-column prop="title" label="申请标题" min-width="200"></el-table-column>
+                <el-table-column prop="type" label="类型" width="100">
+                  <template #default="{ row }">
+                    <el-tag size="small" :type="getTypeTagType(row.type)">{{ row.type }}</el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="applicant" label="申请人" width="100"></el-table-column>
+                <el-table-column prop="amount" label="金额" width="100">
+                  <template #default="{ row }">
+                    <span v-if="row.amount">¥{{ row.amount }}</span>
+                    <span v-else>-</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="currentNode" label="当前节点" width="120"></el-table-column>
+                <el-table-column prop="status" label="状态" width="100">
+                  <template #default="{ row }">
+                    <el-tag size="small" :type="getStatusTagType(row.status)">
+                      {{ getStatusText(row.status) }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="createTime" label="申请时间" width="160"></el-table-column>
+                <el-table-column label="操作" width="200" fixed="right">
+                  <template #default="{ row }">
+                    <el-button size="small" @click="viewApplication(row)">详情</el-button>
+                    <el-button size="small" type="primary" @click="viewFlow(row)">审批流</el-button>
+                    <el-button v-if="row.status === 'pending' && canApprove(row)" size="small" type="success" @click="approveApplication(row)">审批</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+              <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+                <el-pagination 
+                  v-model:current-page="currentPage" 
+                  v-model:page-size="pageSize" 
+                  :total="filteredApplications.length"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  :page-sizes="[10, 20, 50, 100]">
+                </el-pagination>
+              </div>
+            </div>
+          </div>
+          
+          <div v-if="currentMenu === 'flow'">
+            <div class="card">
+              <div class="card-title">🔄 审批流程模板</div>
+              <el-tabs v-model="activeFlowTab">
+                <el-tab-pane label="请假审批" name="leave">
+                  <div style="display: flex; gap: 40px; padding: 20px;">
+                    <div style="flex: 1;">
+                      <div style="text-align: center; font-weight: 600; margin-bottom: 20px; color: #303133;">请假审批流程</div>
+                      <div v-for="(node, index) in leaveFlow" :key="index" :class="['flow-node', node.status]">
+                        <div class="node-avatar" :style="{ background: getNodeColor(node.status) }">{{ node.role.charAt(0) }}</div>
+                        <div class="node-info">
+                          <div class="node-title">{{ node.name }}</div>
+                          <div class="node-desc">角色: {{ node.role }} | 审批时限: {{ node.timeLimit }}</div>
+                        </div>
+                        <span class="node-status" :style="{ background: getNodeBgColor(node.status), color: getNodeColor(node.status) }">
+                          {{ node.status === 'active' ? '进行中' : node.status === 'approved' ? '已通过' : '待处理' }}
+                        </span>
+                      </div>
+                    </div>
+                    <div style="width: 300px;">
+                      <div style="font-weight: 600; margin-bottom: 16px;">流程说明</div>
+                      <el-alert type="info" :closable="false" style="margin-bottom: 12px;">
+                        <template #title>
+                          <div>1. 申请人提交请假申请</div>
+                        </template>
+                      </el-alert>
+                      <el-alert type="info" :closable="false" style="margin-bottom: 12px;">
+                        <template #title>
+                          <div>2. 直属主管审批（3天内）</div>
+                        </template>
+                      </el-alert>
+                      <el-alert type="info" :closable="false" style="margin-bottom: 12px;">
+                        <template #title>
+                          <div>3. 部门经理审批（2天内）</div>
+                        </template>
+                      </el-alert>
+                      <el-alert type="info" :closable="false">
+                        <template #title>
+                          <div>4. HR备案，流程结束</div>
+                        </template>
+                      </el-alert>
+                    </div>
+                  </div>
+                </el-tab-pane>
+                <el-tab-pane label="报销审批" name="expense">
+                  <div style="display: flex; gap: 40px; padding: 20px;">
+                    <div style="flex: 1;">
+                      <div style="text-align: center; font-weight: 600; margin-bottom: 20px; color: #303133;">报销审批流程</div>
+                      <div v-for="(node, index) in expenseFlow" :key="index" :class="['flow-node', node.status]">
+                        <div class="node-avatar" :style="{ background: getNodeColor(node.status) }">{{ node.role.charAt(0) }}</div>
+                        <div class="node-info">
+                          <div class="node-title">{{ node.name }}</div>
+                          <div class="node-desc">角色: {{ node.role }} | 审批时限: {{ node.timeLimit }}</div>
+                        </div>
+                        <span class="node-status" :style="{ background: getNodeBgColor(node.status), color: getNodeColor(node.status) }">
+                          {{ node.status === 'active' ? '进行中' : node.status === 'approved' ? '已通过' : '待处理' }}
+                        </span>
+                      </div>
+                    </div>
+                    <div style="width: 300px;">
+                      <div style="font-weight: 600; margin-bottom: 16px;">金额分级规则</div>
+                      <el-table :data="amountRules" size="small" border>
+                        <el-table-column prop="range" label="金额范围" width="120"></el-table-column>
+                        <el-table-column prop="approver" label="最终审批人"></el-table-column>
+                      </el-table>
+                    </div>
+                  </div>
+                </el-tab-pane>
+                <el-tab-pane label="采购审批" name="purchase">
+                  <div style="display: flex; gap: 40px; padding: 20px;">
+                    <div style="flex: 1;">
+                      <div style="text-align: center; font-weight: 600; margin-bottom: 20px; color: #303133;">采购审批流程</div>
+                      <div v-for="(node, index) in purchaseFlow" :key="index" :class="['flow-node', node.status]">
+                        <div class="node-avatar" :style="{ background: getNodeColor(node.status) }">{{ node.role.charAt(0) }}</div>
+                        <div class="node-info">
+                          <div class="node-title">{{ node.name }}</div>
+                          <div class="node-desc">角色: {{ node.role }} | 审批时限: {{ node.timeLimit }}</div>
+                        </div>
+                        <span class="node-status" :style="{ background: getNodeBgColor(node.status), color: getNodeColor(node.status) }">
+                          {{ node.status === 'active' ? '进行中' : node.status === 'approved' ? '已通过' : '待处理' }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </el-tab-pane>
+              </el-tabs>
+            </div>
+          </div>
+          
+          <div v-if="currentMenu === 'roles'">
+            <div class="card">
+              <div class="card-title">👥 权限角色管理</div>
+              <el-row :gutter="20">
+                <el-col :span="8" v-for="role in roles" :key="role.id">
+                  <div class="role-permission">
+                    <div class="role-avatar" :style="{ background: role.color + '20', color: role.color }">
+                      {{ role.icon }}
+                    </div>
+                    <div class="role-info">
+                      <div class="role-name">{{ role.name }}</div>
+                      <div class="role-desc">{{ role.description }}</div>
+                      <div style="margin-top: 8px;">
+                        <el-tag size="small" v-for="perm in role.permissions.slice(0, 3)" :key="perm" style="margin-right: 4px; margin-bottom: 4px;">
+                          {{ perm }}
+                        </el-tag>
+                        <el-tag v-if="role.permissions.length > 3" size="small" type="info">+{{ role.permissions.length - 3 }}</el-tag>
+                      </div>
+                    </div>
+                    <el-button size="small" @click="editRole(role)">配置</el-button>
+                  </div>
+                </el-col>
+              </el-row>
+              
+              <div style="margin-top: 30px;">
+                <div class="card-title">📊 权限矩阵</div>
+                <el-table :data="permissionMatrix" border style="width: 100%;">
+                  <el-table-column prop="module" label="功能模块" width="150" fixed></el-table-column>
+                  <el-table-column v-for="role in roles" :key="role.id" :label="role.name" align="center">
+                    <template #default="{ row }">
+                      <el-icon v-if="row[role.id]" :color="'#67c23a'"><Check /></el-icon>
+                      <el-icon v-else :color="'#f56c6c'"><Close /></el-icon>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+            </div>
+          </div>
+          
+          <div v-if="currentMenu === 'logs'">
+            <div class="card">
+              <div class="card-title">📝 操作记录</div>
+              <div style="margin-bottom: 16px; display: flex; gap: 12px;">
+                <el-select v-model="logFilter.type" placeholder="操作类型" style="width: 140px;" clearable>
+                  <el-option label="创建申请" value="create"></el-option>
+                  <el-option label="审批" value="approve"></el-option>
+                  <el-option label="驳回" value="reject"></el-option>
+                  <el-option label="修改" value="update"></el-option>
+                  <el-option label="系统" value="system"></el-option>
+                </el-select>
+                <el-date-picker
+                  v-model="logFilter.dateRange"
+                  type="daterange"
+                  range-separator="至"
+                  start-placeholder="开始日期"
+                  end-placeholder="结束日期"
+                  style="width: 280px;">
+                </el-date-picker>
+              </div>
+              <el-timeline>
+                <el-timeline-item 
+                  v-for="log in filteredLogs" 
+                  :key="log.id"
+                  :timestamp="log.time"
+                  :type="getLogType(log.type)"
+                  :color="getLogColor(log.type)">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <el-tag size="small" :type="getLogTagType(log.type)">{{ getLogTypeName(log.type) }}</el-tag>
+                    <strong>{{ log.user }}</strong>
+                    <span>{{ log.action }}</span>
+                    <el-tag size="small" effect="plain" v-if="log.applicationId">申请号: {{ log.applicationId }}</el-tag>
+                  </div>
+                  <div style="color: #909399; font-size: 12px; margin-top: 4px;" v-if="log.detail">{{ log.detail }}</div>
+                </el-timeline-item>
+              </el-timeline>
+            </div>
+          </div>
+          
+          <div v-if="currentMenu === 'statistics'">
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <div class="card">
+                  <div class="card-title">📈 月度申请趋势</div>
+                  <div ref="monthlyChart" class="chart-container"></div>
+                </div>
+              </el-col>
+              <el-col :span="12">
+                <div class="card">
+                  <div class="card-title">👤 部门申请排行</div>
+                  <div ref="deptChart" class="chart-container"></div>
+                </div>
+              </el-col>
+            </el-row>
+            <el-row :gutter="20" style="margin-top: 20px;">
+              <el-col :span="8">
+                <div class="card">
+                  <div class="card-title">⏱️ 审批时效分析</div>
+                  <div ref="efficiencyChart" class="chart-container"></div>
+                </div>
+              </el-col>
+              <el-col :span="8">
+                <div class="card">
+                  <div class="card-title">✅ 通过率统计</div>
+                  <div ref="passRateChart" class="chart-container"></div>
+                </div>
+              </el-col>
+              <el-col :span="8">
+                <div class="card">
+                  <div class="card-title">💰 报销金额统计</div>
+                  <div ref="amountChart" class="chart-container"></div>
+                </div>
+              </el-col>
+            </el-row>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <el-dialog v-model="detailDialogVisible" title="申请详情" width="700px">
+      <div v-if="currentApplication">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="申请编号">{{ currentApplication.id }}</el-descriptions-item>
+          <el-descriptions-item label="申请类型">
+            <el-tag :type="getTypeTagType(currentApplication.type)">{{ currentApplication.type }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="申请人">{{ currentApplication.applicant }}</el-descriptions-item>
+          <el-descriptions-item label="所属部门">{{ currentApplication.department }}</el-descriptions-item>
+          <el-descriptions-item label="申请时间">{{ currentApplication.createTime }}</el-descriptions-item>
+          <el-descriptions-item label="当前状态">
+            <el-tag :type="getStatusTagType(currentApplication.status)">{{ getStatusText(currentApplication.status) }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="金额" v-if="currentApplication.amount">¥{{ currentApplication.amount }}</el-descriptions-item>
+          <el-descriptions-item label="当前节点" v-else>{{ currentApplication.currentNode }}</el-descriptions-item>
+          <el-descriptions-item label="申请事由" :span="2">{{ currentApplication.reason }}</el-descriptions-item>
+        </el-descriptions>
+        
+        <div style="margin-top: 20px;">
+          <div style="font-weight: 600; margin-bottom: 12px;">审批流程</div>
+          <el-steps :active="getCurrentStepIndex()" finish-status="success">
+            <el-step 
+              v-for="(node, index) in currentApplication.flowNodes" 
+              :key="index"
+              :title="node.name"
+              :description="node.approver || '等待中'"
+              :status="node.status">
+            </el-step>
+          </el-steps>
+        </div>
+        
+        <div style="margin-top: 20px;" v-if="currentApplication.status === 'pending' && canApprove(currentApplication)">
+          <el-divider>审批操作</el-divider>
+          <el-form label-width="80px">
+            <el-form-item label="审批意见">
+              <el-input v-model="approveComment" type="textarea" :rows="3" placeholder="请输入审批意见"></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="success" @click="submitApprove">通过</el-button>
+              <el-button type="danger" @click="submitReject">驳回</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </div>
+    </el-dialog>
+    
+    <el-dialog v-model="createDialogVisible" title="新建申请" width="600px">
+      <el-form :model="newApplication" label-width="100px">
+        <el-form-item label="申请类型">
+          <el-select v-model="newApplication.type" style="width: 100%;">
+            <el-option label="请假申请" value="请假"></el-option>
+            <el-option label="报销申请" value="报销"></el-option>
+            <el-option label="采购申请" value="采购"></el-option>
+            <el-option label="出差申请" value="出差"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="申请标题">
+          <el-input v-model="newApplication.title" placeholder="请输入申请标题"></el-input>
+        </el-form-item>
+        <el-form-item label="申请金额" v-if="newApplication.type === '报销' || newApplication.type === '采购'">
+          <el-input-number v-model="newApplication.amount" :min="0" :precision="2" style="width: 100%;"></el-input-number>
+        </el-form-item>
+        <el-form-item label="申请事由">
+          <el-input v-model="newApplication.reason" type="textarea" :rows="4" placeholder="请详细说明申请事由"></el-input>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="createDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitApplication">提交申请</el-button>
+      </template>
+    </el-dialog>
+    
+    <el-dialog v-model="showAlerts" title="异常提醒" width="500px">
+      <div v-for="(alert, index) in alerts" :key="index" style="margin-bottom: 12px;">
+        <div :class="['alert-banner', alert.level]">
+          <el-icon :size="20">
+            <component :is="alert.icon" />
+          </el-icon>
+          <div style="flex: 1;">
+            <div style="font-weight: 600;">{{ alert.title }}</div>
+            <div style="font-size: 12px; opacity: 0.85;">{{ alert.message }}</div>
+          </div>
+          <span style="font-size: 12px;">{{ alert.time }}</span>
+        </div>
+      </div>
+      <div v-if="alerts.length === 0" style="text-align: center; padding: 40px; color: #909399;">
+        <el-icon :size="48"><CircleCheck /></el-icon>
+        <div style="margin-top: 12px;">暂无异常提醒</div>
+      </div>
+    </el-dialog>
+  </div>
+  
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
