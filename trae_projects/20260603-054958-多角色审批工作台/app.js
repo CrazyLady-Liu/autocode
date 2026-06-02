@@ -15,6 +15,11 @@ const app = createApp({
     const showAlerts = ref(false);
     const currentApplication = ref(null);
     const approveComment = ref('');
+    const nodeDetailVisible = ref(false);
+    const selectedNodeApp = ref(null);
+    const selectedNodeIndex = ref(-1);
+    const logHighlightAppId = ref('');
+    const logHighlightNodeName = ref('');
     
     const menus = [
       { key: 'dashboard', label: '工作台', icon: 'Odometer' },
@@ -86,6 +91,78 @@ const app = createApp({
       }
       return result;
     });
+
+    const selectedNode = computed(() => {
+      if (!selectedNodeApp.value || selectedNodeIndex.value < 0) return null;
+      return selectedNodeApp.value.flowNodes[selectedNodeIndex.value] || null;
+    });
+
+    const nodeRelatedLogs = computed(() => {
+      if (!selectedNodeApp.value || !selectedNode.value) return [];
+      const appId = selectedNodeApp.value.id;
+      const nodeName = selectedNode.value.name;
+      return operationLogs.value.filter(l =>
+        l.applicationId === appId && l.nodeName === nodeName
+      );
+    });
+
+    const getNodeStatusLabel = (status) => {
+      const map = {
+        finish: '已完成',
+        process: '进行中',
+        wait: '待处理',
+        error: '已驳回'
+      };
+      return map[status] || '未知';
+    };
+
+    const getNodeStatusTagType = (status) => {
+      const map = {
+        finish: 'success',
+        process: 'primary',
+        wait: 'info',
+        error: 'danger'
+      };
+      return map[status] || 'info';
+    };
+
+    const clickFlowNode = (app, nodeIndex) => {
+      selectedNodeApp.value = app;
+      selectedNodeIndex.value = nodeIndex;
+      nodeDetailVisible.value = true;
+    };
+
+    const clickStepNode = (app, nodeIndex) => {
+      selectedNodeApp.value = app;
+      selectedNodeIndex.value = nodeIndex;
+      nodeDetailVisible.value = true;
+    };
+
+    const navigateToAppFromLog = (applicationId) => {
+      const app = applications.value.find(a => a.id === applicationId);
+      if (app) {
+        currentApplication.value = app;
+        detailDialogVisible.value = true;
+      }
+    };
+
+    const navigateToNodeLogs = (applicationId, nodeName) => {
+      logHighlightAppId.value = applicationId;
+      logHighlightNodeName.value = nodeName;
+      logFilter.value.type = '';
+      currentMenu.value = 'logs';
+    };
+
+    const isLogHighlighted = (log) => {
+      if (!logHighlightAppId.value) return false;
+      return log.applicationId === logHighlightAppId.value &&
+             log.nodeName === logHighlightNodeName.value;
+    };
+
+    const clearLogHighlight = () => {
+      logHighlightAppId.value = '';
+      logHighlightNodeName.value = '';
+    };
 
     const getStatusText = (status) => {
       const map = {
@@ -226,20 +303,23 @@ const app = createApp({
               nodes[i].status = 'finish';
               nodes[i].approver = currentUser.value.name;
               nodes[i].time = new Date().toLocaleString();
+              nodes[i].comment = approveComment.value || '同意';
+              const currentNodeName = nodes[i].name;
               if (i + 1 < nodes.length) {
                 nodes[i + 1].status = 'process';
                 app.currentNode = nodes[i + 1].name;
+                app.status = 'processing';
               } else {
                 app.status = 'approved';
                 app.currentNode = '已完成';
               }
+              addLog('approve', `审批通过了申请`, app.id, currentNodeName, approveComment.value || '同意');
               break;
             }
           }
         }
         ElementPlus.ElMessage.success('审批通过');
         detailDialogVisible.value = false;
-        addLog('approve', `审批通过了申请`, app.id);
       }
     };
 
@@ -255,13 +335,13 @@ const app = createApp({
               nodes[i].status = 'error';
               nodes[i].approver = currentUser.value.name;
               nodes[i].comment = approveComment.value;
+              addLog('reject', `驳回了申请`, app.id, nodes[i].name, approveComment.value || '无');
               break;
             }
           }
         }
         ElementPlus.ElMessage.success('已驳回申请');
         detailDialogVisible.value = false;
-        addLog('reject', `驳回了申请`, app.id);
       }
     };
 
@@ -298,18 +378,19 @@ const app = createApp({
       applications.value.unshift(newApp);
       createDialogVisible.value = false;
       ElementPlus.ElMessage.success('申请提交成功');
-      addLog('create', `提交了${newApplication.value.type}申请`, newApp.id);
+      addLog('create', `提交了${newApplication.value.type}申请`, newApp.id, '提交申请', newApplication.value.reason);
     };
 
-    const addLog = (type, action, applicationId = '') => {
+    const addLog = (type, action, applicationId = '', nodeName = '', detail = '') => {
       const newLog = {
         id: operationLogs.value.length + 1,
         type,
         user: currentUser.value.name,
         action,
         applicationId,
+        nodeName,
         time: new Date().toLocaleString(),
-        detail: ''
+        detail
       };
       operationLogs.value.unshift(newLog);
     };
@@ -545,6 +626,13 @@ const app = createApp({
       showAlerts,
       currentApplication,
       approveComment,
+      nodeDetailVisible,
+      selectedNodeApp,
+      selectedNodeIndex,
+      selectedNode,
+      nodeRelatedLogs,
+      logHighlightAppId,
+      logHighlightNodeName,
       newApplication,
       currentUser,
       applications,
@@ -567,6 +655,8 @@ const app = createApp({
       getTypeTagType,
       getNodeColor,
       getNodeBgColor,
+      getNodeStatusLabel,
+      getNodeStatusTagType,
       getLogType,
       getLogColor,
       getLogTagType,
@@ -582,7 +672,13 @@ const app = createApp({
       openCreateDialog,
       submitApplication,
       handleUserCommand,
-      editRole
+      editRole,
+      clickFlowNode,
+      clickStepNode,
+      navigateToAppFromLog,
+      navigateToNodeLogs,
+      isLogHighlighted,
+      clearLogHighlight
     };
   }
 });

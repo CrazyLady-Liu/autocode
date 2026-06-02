@@ -19,10 +19,10 @@ const mockData = {
       currentNode: '部门经理审批',
       createTime: '2024-06-03 09:30:00',
       flowNodes: [
-        { name: '提交申请', status: 'finish', approver: '张三', time: '2024-06-03 09:30' },
-        { name: '直属主管审批', status: 'finish', approver: '李主管', time: '2024-06-03 10:15' },
-        { name: '部门经理审批', status: 'process', approver: '', time: '' },
-        { name: 'HR备案', status: 'wait', approver: '', time: '' }
+        { name: '提交申请', status: 'finish', approver: '张三', time: '2024-06-03 09:30', comment: '提交年假申请5天' },
+        { name: '直属主管审批', status: 'finish', approver: '李主管', time: '2024-06-03 10:15', comment: '同意，安排好交接即可' },
+        { name: '部门经理审批', status: 'process', approver: '', time: '', comment: '' },
+        { name: 'HR备案', status: 'wait', approver: '', time: '', comment: '' }
       ]
     },
     {
@@ -37,11 +37,11 @@ const mockData = {
       currentNode: '财务复核',
       createTime: '2024-06-02 14:20:00',
       flowNodes: [
-        { name: '提交申请', status: 'finish', approver: '李四', time: '2024-06-02 14:20' },
-        { name: '部门经理审批', status: 'finish', approver: '王总监', time: '2024-06-02 16:00' },
-        { name: '财务复核', status: 'process', approver: '', time: '' },
-        { name: '总经理审批', status: 'wait', approver: '', time: '' },
-        { name: '出纳打款', status: 'wait', approver: '', time: '' }
+        { name: '提交申请', status: 'finish', approver: '李四', time: '2024-06-02 14:20', comment: '上海出差5天费用报销' },
+        { name: '部门经理审批', status: 'finish', approver: '王总监', time: '2024-06-02 16:00', comment: '情况属实，同意报销' },
+        { name: '财务复核', status: 'process', approver: '', time: '', comment: '' },
+        { name: '总经理审批', status: 'wait', approver: '', time: '', comment: '' },
+        { name: '出纳打款', status: 'wait', approver: '', time: '', comment: '' }
       ]
     },
     {
@@ -56,11 +56,11 @@ const mockData = {
       currentNode: '已完成',
       createTime: '2024-06-01 10:00:00',
       flowNodes: [
-        { name: '提交申请', status: 'finish', approver: '王五', time: '2024-06-01 10:00' },
-        { name: '部门经理审批', status: 'finish', approver: '赵经理', time: '2024-06-01 11:30' },
-        { name: '采购审核', status: 'finish', approver: '孙采购', time: '2024-06-01 14:00' },
-        { name: '财务审批', status: 'finish', approver: '钱财务', time: '2024-06-01 15:30' },
-        { name: '总经理审批', status: 'finish', approver: '周总', time: '2024-06-01 17:00' }
+        { name: '提交申请', status: 'finish', approver: '王五', time: '2024-06-01 10:00', comment: '新入职员工办公设备需求' },
+        { name: '部门经理审批', status: 'finish', approver: '赵经理', time: '2024-06-01 11:30', comment: '预算内，同意采购' },
+        { name: '采购审核', status: 'finish', approver: '孙采购', time: '2024-06-01 14:00', comment: '已比价，推荐A供应商' },
+        { name: '财务审批', status: 'finish', approver: '钱财务', time: '2024-06-01 15:30', comment: '预算充足，同意支付' },
+        { name: '总经理审批', status: 'finish', approver: '周总', time: '2024-06-01 17:00', comment: '同意采购，尽快安排' }
       ]
     },
     {
@@ -75,10 +75,10 @@ const mockData = {
       currentNode: '部门经理审批',
       createTime: '2024-06-03 11:00:00',
       flowNodes: [
-        { name: '提交申请', status: 'finish', approver: '赵六', time: '2024-06-03 11:00' },
-        { name: '部门经理审批', status: 'process', approver: '', time: '' },
-        { name: '财务预算审核', status: 'wait', approver: '', time: '' },
-        { name: 'HR备案', status: 'wait', approver: '', time: '' }
+        { name: '提交申请', status: 'finish', approver: '赵六', time: '2024-06-03 11:00', comment: '参加行业展会，拓展客户资源' },
+        { name: '部门经理审批', status: 'process', approver: '', time: '', comment: '' },
+        { name: '财务预算审核', status: 'wait', approver: '', time: '', comment: '' },
+        { name: 'HR备案', status: 'wait', approver: '', time: '', comment: '' }
       ]
     },
     {
@@ -93,7 +93,7 @@ const mockData = {
       currentNode: '已驳回',
       createTime: '2024-05-28 08:30:00',
       flowNodes: [
-        { name: '提交申请', status: 'finish', approver: '孙七', time: '2024-05-28 08:30' },
+        { name: '提交申请', status: 'finish', approver: '孙七', time: '2024-05-28 08:30', comment: '感冒发烧需休息2天' },
         { name: '直属主管审批', status: 'error', approver: '李主管', time: '2024-05-28 09:15', comment: '项目关键时期，建议改期' }
       ]
     },
@@ -109,10 +109,10 @@ const mockData = {
       currentNode: '已完成',
       createTime: '2024-05-25 15:00:00',
       flowNodes: [
-        { name: '提交申请', status: 'finish', approver: '周八', time: '2024-05-25 15:00' },
-        { name: '部门经理审批', status: 'finish', approver: '王总监', time: '2024-05-25 16:30' },
-        { name: '财务复核', status: 'finish', approver: '吴会计', time: '2024-05-26 10:00' },
-        { name: '出纳打款', status: 'finish', approver: '郑出纳', time: '2024-05-26 14:00' }
+        { name: '提交申请', status: 'finish', approver: '周八', time: '2024-05-25 15:00', comment: '招待XX公司客户用餐' },
+        { name: '部门经理审批', status: 'finish', approver: '王总监', time: '2024-05-25 16:30', comment: '属于正常业务招待，同意' },
+        { name: '财务复核', status: 'finish', approver: '吴会计', time: '2024-05-26 10:00', comment: '票据合规，同意报销' },
+        { name: '出纳打款', status: 'finish', approver: '郑出纳', time: '2024-05-26 14:00', comment: '款项已转入申请人账户' }
       ]
     },
     {
@@ -127,10 +127,10 @@ const mockData = {
       currentNode: '已完成',
       createTime: '2024-05-20 09:00:00',
       flowNodes: [
-        { name: '提交申请', status: 'finish', approver: '吴九', time: '2024-05-20 09:00' },
-        { name: '部门经理审批', status: 'finish', approver: '赵经理', time: '2024-05-20 10:30' },
-        { name: '采购审核', status: 'finish', approver: '孙采购', time: '2024-05-20 11:30' },
-        { name: '财务审批', status: 'finish', approver: '钱财务', time: '2024-05-20 14:00' }
+        { name: '提交申请', status: 'finish', approver: '吴九', time: '2024-05-20 09:00', comment: '打印纸和墨盒库存不足' },
+        { name: '部门经理审批', status: 'finish', approver: '赵经理', time: '2024-05-20 10:30', comment: '日常采购，同意' },
+        { name: '采购审核', status: 'finish', approver: '孙采购', time: '2024-05-20 11:30', comment: '已选定供应商，价格合理' },
+        { name: '财务审批', status: 'finish', approver: '钱财务', time: '2024-05-20 14:00', comment: '金额较小，同意支付' }
       ]
     },
     {
@@ -145,9 +145,9 @@ const mockData = {
       currentNode: '直属主管审批',
       createTime: '2024-06-03 16:00:00',
       flowNodes: [
-        { name: '提交申请', status: 'finish', approver: '郑十', time: '2024-06-03 16:00' },
-        { name: '直属主管审批', status: 'process', approver: '', time: '' },
-        { name: 'HR备案', status: 'wait', approver: '', time: '' }
+        { name: '提交申请', status: 'finish', approver: '郑十', time: '2024-06-03 16:00', comment: '上周六加班8小时，申请调休' },
+        { name: '直属主管审批', status: 'process', approver: '', time: '', comment: '' },
+        { name: 'HR备案', status: 'wait', approver: '', time: '', comment: '' }
       ]
     }
   ],
@@ -247,19 +247,28 @@ const mockData = {
   ],
 
   operationLogs: [
-    { id: 1, type: 'create', user: '张三', action: '提交了请假申请', applicationId: 'AP20240601001', time: '2024-06-03 09:30:00', detail: '申请时间：6月10日-6月14日，共5天' },
-    { id: 2, type: 'approve', user: '李主管', action: '审批通过了张三的请假申请', applicationId: 'AP20240601001', time: '2024-06-03 10:15:00', detail: '审批意见：同意' },
-    { id: 3, type: 'create', user: '李四', action: '提交了报销申请', applicationId: 'AP20240601002', time: '2024-06-02 14:20:00', detail: '报销金额：5680.00元' },
-    { id: 4, type: 'approve', user: '王总监', action: '审批通过了李四的报销申请', applicationId: 'AP20240601002', time: '2024-06-02 16:00:00', detail: '审批意见：情况属实，同意报销' },
-    { id: 5, type: 'create', user: '王五', action: '提交了采购申请', applicationId: 'AP20240601003', time: '2024-06-01 10:00:00', detail: '采购金额：25000.00元' },
-    { id: 6, type: 'approve', user: '周总', action: '审批通过了采购申请', applicationId: 'AP20240601003', time: '2024-06-01 17:00:00', detail: '审批意见：同意采购' },
-    { id: 7, type: 'create', user: '赵六', action: '提交了出差申请', applicationId: 'AP20240601004', time: '2024-06-03 11:00:00', detail: '出差地点：北京，时间6月15日-18日' },
-    { id: 8, type: 'reject', user: '李主管', action: '驳回了孙七的病假申请', applicationId: 'AP20240501005', time: '2024-05-28 09:15:00', detail: '审批意见：项目关键时期，建议改期' },
-    { id: 9, type: 'system', user: '系统', action: '自动提醒：3笔申请即将超时', applicationId: '', time: '2024-06-03 08:00:00', detail: '请相关审批人及时处理' },
-    { id: 10, type: 'update', user: '李四', action: '修改了报销单金额', applicationId: 'AP20240601002', time: '2024-06-02 14:30:00', detail: '金额从5200元修改为5680元' },
-    { id: 11, type: 'create', user: '周八', action: '提交了业务招待费报销', applicationId: 'AP20240501006', time: '2024-05-25 15:00:00', detail: '报销金额：2850.00元' },
-    { id: 12, type: 'approve', user: '郑出纳', action: '完成了报销打款', applicationId: 'AP20240501006', time: '2024-05-26 14:00:00', detail: '款项已转入申请人账户' },
-    { id: 13, type: 'create', user: '郑十', action: '提交了调休申请', applicationId: 'AP20240501008', time: '2024-06-03 16:00:00', detail: '调休时间：6月4日' }
+    { id: 1, type: 'create', user: '张三', action: '提交了请假申请', applicationId: 'AP20240601001', nodeName: '提交申请', time: '2024-06-03 09:30:00', detail: '申请时间：6月10日-6月14日，共5天' },
+    { id: 2, type: 'approve', user: '李主管', action: '审批通过了张三的请假申请', applicationId: 'AP20240601001', nodeName: '直属主管审批', time: '2024-06-03 10:15:00', detail: '审批意见：同意，安排好交接即可' },
+    { id: 3, type: 'create', user: '李四', action: '提交了报销申请', applicationId: 'AP20240601002', nodeName: '提交申请', time: '2024-06-02 14:20:00', detail: '报销金额：5680.00元' },
+    { id: 4, type: 'approve', user: '王总监', action: '审批通过了李四的报销申请', applicationId: 'AP20240601002', nodeName: '部门经理审批', time: '2024-06-02 16:00:00', detail: '审批意见：情况属实，同意报销' },
+    { id: 5, type: 'create', user: '王五', action: '提交了采购申请', applicationId: 'AP20240601003', nodeName: '提交申请', time: '2024-06-01 10:00:00', detail: '采购金额：25000.00元' },
+    { id: 6, type: 'approve', user: '赵经理', action: '审批通过了采购申请（部门经理节点）', applicationId: 'AP20240601003', nodeName: '部门经理审批', time: '2024-06-01 11:30:00', detail: '审批意见：预算内，同意采购' },
+    { id: 7, type: 'approve', user: '孙采购', action: '审核通过了采购申请', applicationId: 'AP20240601003', nodeName: '采购审核', time: '2024-06-01 14:00:00', detail: '审批意见：已比价，推荐A供应商' },
+    { id: 8, type: 'approve', user: '钱财务', action: '审批通过了采购申请（财务节点）', applicationId: 'AP20240601003', nodeName: '财务审批', time: '2024-06-01 15:30:00', detail: '审批意见：预算充足，同意支付' },
+    { id: 9, type: 'approve', user: '周总', action: '审批通过了采购申请（总经理节点）', applicationId: 'AP20240601003', nodeName: '总经理审批', time: '2024-06-01 17:00:00', detail: '审批意见：同意采购，尽快安排' },
+    { id: 10, type: 'create', user: '赵六', action: '提交了出差申请', applicationId: 'AP20240601004', nodeName: '提交申请', time: '2024-06-03 11:00:00', detail: '出差地点：北京，时间6月15日-18日' },
+    { id: 11, type: 'reject', user: '李主管', action: '驳回了孙七的病假申请', applicationId: 'AP20240501005', nodeName: '直属主管审批', time: '2024-05-28 09:15:00', detail: '审批意见：项目关键时期，建议改期' },
+    { id: 12, type: 'system', user: '系统', action: '自动提醒：3笔申请即将超时', applicationId: '', nodeName: '', time: '2024-06-03 08:00:00', detail: '请相关审批人及时处理' },
+    { id: 13, type: 'update', user: '李四', action: '修改了报销单金额', applicationId: 'AP20240601002', nodeName: '提交申请', time: '2024-06-02 14:30:00', detail: '金额从5200元修改为5680元' },
+    { id: 14, type: 'create', user: '周八', action: '提交了业务招待费报销', applicationId: 'AP20240501006', nodeName: '提交申请', time: '2024-05-25 15:00:00', detail: '报销金额：2850.00元' },
+    { id: 15, type: 'approve', user: '王总监', action: '审批通过了周八的报销申请', applicationId: 'AP20240501006', nodeName: '部门经理审批', time: '2024-05-25 16:30:00', detail: '审批意见：属于正常业务招待，同意' },
+    { id: 16, type: 'approve', user: '吴会计', action: '复核通过了周八的报销申请', applicationId: 'AP20240501006', nodeName: '财务复核', time: '2024-05-26 10:00:00', detail: '审批意见：票据合规，同意报销' },
+    { id: 17, type: 'approve', user: '郑出纳', action: '完成了报销打款', applicationId: 'AP20240501006', nodeName: '出纳打款', time: '2024-05-26 14:00:00', detail: '款项已转入申请人账户' },
+    { id: 18, type: 'create', user: '吴九', action: '提交了办公用品采购申请', applicationId: 'AP20240501007', nodeName: '提交申请', time: '2024-05-20 09:00:00', detail: '采购金额：3200.00元' },
+    { id: 19, type: 'approve', user: '赵经理', action: '审批通过了办公用品采购', applicationId: 'AP20240501007', nodeName: '部门经理审批', time: '2024-05-20 10:30:00', detail: '审批意见：日常采购，同意' },
+    { id: 20, type: 'approve', user: '孙采购', action: '审核通过了办公用品采购', applicationId: 'AP20240501007', nodeName: '采购审核', time: '2024-05-20 11:30:00', detail: '审批意见：已选定供应商，价格合理' },
+    { id: 21, type: 'approve', user: '钱财务', action: '审批通过了办公用品采购', applicationId: 'AP20240501007', nodeName: '财务审批', time: '2024-05-20 14:00:00', detail: '审批意见：金额较小，同意支付' },
+    { id: 22, type: 'create', user: '郑十', action: '提交了调休申请', applicationId: 'AP20240501008', nodeName: '提交申请', time: '2024-06-03 16:00:00', detail: '调休时间：6月4日' }
   ],
 
   alerts: [

@@ -80,6 +80,12 @@
       margin-bottom: 12px;
       background: #fafafa;
       position: relative;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .flow-node:hover { 
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+      transform: translateY(-1px);
     }
     .flow-node.active { 
       border-color: #409eff; 
@@ -215,6 +221,51 @@
       height: 8px;
       background: #f56c6c;
       border-radius: 50%;
+    }
+    .clickable-step {
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .clickable-step:hover {
+      opacity: 0.8;
+    }
+    .log-clickable {
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .log-clickable:hover {
+      color: #409eff;
+      text-decoration: underline;
+    }
+    .log-highlight {
+      background: #ecf5ff;
+      border-left: 3px solid #409eff;
+      padding: 8px 12px;
+      border-radius: 4px;
+      animation: highlight-fade 3s ease-out;
+    }
+    @keyframes highlight-fade {
+      0% { background: #d9ecff; }
+      100% { background: transparent; }
+    }
+    .node-detail-section {
+      margin-bottom: 20px;
+    }
+    .node-detail-label {
+      font-size: 12px;
+      color: #909399;
+      margin-bottom: 4px;
+    }
+    .node-detail-value {
+      font-size: 14px;
+      color: #303133;
+    }
+    .node-log-item {
+      padding: 10px 12px;
+      border: 1px solid #ebeef5;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      background: #fafafa;
     }
   </style>
 </head>
@@ -419,39 +470,47 @@
                   <div style="display: flex; gap: 40px; padding: 20px;">
                     <div style="flex: 1;">
                       <div style="text-align: center; font-weight: 600; margin-bottom: 20px; color: #303133;">请假审批流程</div>
-                      <div v-for="(node, index) in leaveFlow" :key="index" :class="['flow-node', node.status]">
-                        <div class="node-avatar" :style="{ background: getNodeColor(node.status) }">{{ node.role.charAt(0) }}</div>
-                        <div class="node-info">
-                          <div class="node-title">{{ node.name }}</div>
-                          <div class="node-desc">角色: {{ node.role }} | 审批时限: {{ node.timeLimit }}</div>
+                      <div v-for="(app, aIdx) in applications.filter(a => a.type === '请假')" :key="app.id" style="margin-bottom: 24px;">
+                        <div style="font-size: 13px; color: #606266; margin-bottom: 10px; font-weight: 500;">
+                          📎 {{ app.title }}
+                          <el-tag size="small" :type="getStatusTagType(app.status)" style="margin-left: 8px;">{{ getStatusText(app.status) }}</el-tag>
                         </div>
-                        <span class="node-status" :style="{ background: getNodeBgColor(node.status), color: getNodeColor(node.status) }">
-                          {{ node.status === 'active' ? '进行中' : node.status === 'approved' ? '已通过' : '待处理' }}
-                        </span>
+                        <div v-for="(node, index) in app.flowNodes" :key="index" 
+                             :class="['flow-node', node.status === 'finish' ? 'approved' : node.status === 'process' ? 'active' : node.status === 'error' ? 'rejected' : '']"
+                             @click="clickFlowNode(app, index)">
+                          <div class="node-avatar" :style="{ background: node.status === 'finish' ? '#67c23a' : node.status === 'process' ? '#409eff' : node.status === 'error' ? '#f56c6c' : '#909399' }">{{ (node.approver || node.name).charAt(0) }}</div>
+                          <div class="node-info">
+                            <div class="node-title">{{ node.name }}</div>
+                            <div class="node-desc">
+                              <span v-if="node.approver">审批人: {{ node.approver }}</span>
+                              <span v-else>等待审批</span>
+                              <span v-if="node.time"> | {{ node.time }}</span>
+                            </div>
+                          </div>
+                          <span class="node-status" :style="{ background: node.status === 'finish' ? '#f0f9eb' : node.status === 'process' ? '#ecf5ff' : node.status === 'error' ? '#fef0f0' : '#f4f4f5', color: node.status === 'finish' ? '#67c23a' : node.status === 'process' ? '#409eff' : node.status === 'error' ? '#f56c6c' : '#909399' }">
+                            {{ getNodeStatusLabel(node.status) }}
+                          </span>
+                          <el-icon style="margin-left: 8px; color: #c0c4cc;"><ArrowRight /></el-icon>
+                        </div>
                       </div>
                     </div>
                     <div style="width: 300px;">
                       <div style="font-weight: 600; margin-bottom: 16px;">流程说明</div>
                       <el-alert type="info" :closable="false" style="margin-bottom: 12px;">
-                        <template #title>
-                          <div>1. 申请人提交请假申请</div>
-                        </template>
+                        <template #title><div>1. 申请人提交请假申请</div></template>
                       </el-alert>
                       <el-alert type="info" :closable="false" style="margin-bottom: 12px;">
-                        <template #title>
-                          <div>2. 直属主管审批（3天内）</div>
-                        </template>
+                        <template #title><div>2. 直属主管审批（3天内）</div></template>
                       </el-alert>
                       <el-alert type="info" :closable="false" style="margin-bottom: 12px;">
-                        <template #title>
-                          <div>3. 部门经理审批（2天内）</div>
-                        </template>
+                        <template #title><div>3. 部门经理审批（2天内）</div></template>
                       </el-alert>
                       <el-alert type="info" :closable="false">
-                        <template #title>
-                          <div>4. HR备案，流程结束</div>
-                        </template>
+                        <template #title><div>4. HR备案，流程结束</div></template>
                       </el-alert>
+                      <div style="margin-top: 20px; padding: 12px; background: #f4f4f5; border-radius: 6px; font-size: 13px; color: #606266;">
+                        💡 点击任意节点可查看详情和关联操作记录
+                      </div>
                     </div>
                   </div>
                 </el-tab-pane>
@@ -459,15 +518,28 @@
                   <div style="display: flex; gap: 40px; padding: 20px;">
                     <div style="flex: 1;">
                       <div style="text-align: center; font-weight: 600; margin-bottom: 20px; color: #303133;">报销审批流程</div>
-                      <div v-for="(node, index) in expenseFlow" :key="index" :class="['flow-node', node.status]">
-                        <div class="node-avatar" :style="{ background: getNodeColor(node.status) }">{{ node.role.charAt(0) }}</div>
-                        <div class="node-info">
-                          <div class="node-title">{{ node.name }}</div>
-                          <div class="node-desc">角色: {{ node.role }} | 审批时限: {{ node.timeLimit }}</div>
+                      <div v-for="(app, aIdx) in applications.filter(a => a.type === '报销')" :key="app.id" style="margin-bottom: 24px;">
+                        <div style="font-size: 13px; color: #606266; margin-bottom: 10px; font-weight: 500;">
+                          📎 {{ app.title }}
+                          <el-tag size="small" :type="getStatusTagType(app.status)" style="margin-left: 8px;">{{ getStatusText(app.status) }}</el-tag>
                         </div>
-                        <span class="node-status" :style="{ background: getNodeBgColor(node.status), color: getNodeColor(node.status) }">
-                          {{ node.status === 'active' ? '进行中' : node.status === 'approved' ? '已通过' : '待处理' }}
-                        </span>
+                        <div v-for="(node, index) in app.flowNodes" :key="index" 
+                             :class="['flow-node', node.status === 'finish' ? 'approved' : node.status === 'process' ? 'active' : node.status === 'error' ? 'rejected' : '']"
+                             @click="clickFlowNode(app, index)">
+                          <div class="node-avatar" :style="{ background: node.status === 'finish' ? '#67c23a' : node.status === 'process' ? '#409eff' : node.status === 'error' ? '#f56c6c' : '#909399' }">{{ (node.approver || node.name).charAt(0) }}</div>
+                          <div class="node-info">
+                            <div class="node-title">{{ node.name }}</div>
+                            <div class="node-desc">
+                              <span v-if="node.approver">审批人: {{ node.approver }}</span>
+                              <span v-else>等待审批</span>
+                              <span v-if="node.time"> | {{ node.time }}</span>
+                            </div>
+                          </div>
+                          <span class="node-status" :style="{ background: node.status === 'finish' ? '#f0f9eb' : node.status === 'process' ? '#ecf5ff' : node.status === 'error' ? '#fef0f0' : '#f4f4f5', color: node.status === 'finish' ? '#67c23a' : node.status === 'process' ? '#409eff' : node.status === 'error' ? '#f56c6c' : '#909399' }">
+                            {{ getNodeStatusLabel(node.status) }}
+                          </span>
+                          <el-icon style="margin-left: 8px; color: #c0c4cc;"><ArrowRight /></el-icon>
+                        </div>
                       </div>
                     </div>
                     <div style="width: 300px;">
@@ -476,6 +548,9 @@
                         <el-table-column prop="range" label="金额范围" width="120"></el-table-column>
                         <el-table-column prop="approver" label="最终审批人"></el-table-column>
                       </el-table>
+                      <div style="margin-top: 20px; padding: 12px; background: #f4f4f5; border-radius: 6px; font-size: 13px; color: #606266;">
+                        💡 点击任意节点可查看详情和关联操作记录
+                      </div>
                     </div>
                   </div>
                 </el-tab-pane>
@@ -483,15 +558,28 @@
                   <div style="display: flex; gap: 40px; padding: 20px;">
                     <div style="flex: 1;">
                       <div style="text-align: center; font-weight: 600; margin-bottom: 20px; color: #303133;">采购审批流程</div>
-                      <div v-for="(node, index) in purchaseFlow" :key="index" :class="['flow-node', node.status]">
-                        <div class="node-avatar" :style="{ background: getNodeColor(node.status) }">{{ node.role.charAt(0) }}</div>
-                        <div class="node-info">
-                          <div class="node-title">{{ node.name }}</div>
-                          <div class="node-desc">角色: {{ node.role }} | 审批时限: {{ node.timeLimit }}</div>
+                      <div v-for="(app, aIdx) in applications.filter(a => a.type === '采购')" :key="app.id" style="margin-bottom: 24px;">
+                        <div style="font-size: 13px; color: #606266; margin-bottom: 10px; font-weight: 500;">
+                          📎 {{ app.title }}
+                          <el-tag size="small" :type="getStatusTagType(app.status)" style="margin-left: 8px;">{{ getStatusText(app.status) }}</el-tag>
                         </div>
-                        <span class="node-status" :style="{ background: getNodeBgColor(node.status), color: getNodeColor(node.status) }">
-                          {{ node.status === 'active' ? '进行中' : node.status === 'approved' ? '已通过' : '待处理' }}
-                        </span>
+                        <div v-for="(node, index) in app.flowNodes" :key="index" 
+                             :class="['flow-node', node.status === 'finish' ? 'approved' : node.status === 'process' ? 'active' : node.status === 'error' ? 'rejected' : '']"
+                             @click="clickFlowNode(app, index)">
+                          <div class="node-avatar" :style="{ background: node.status === 'finish' ? '#67c23a' : node.status === 'process' ? '#409eff' : node.status === 'error' ? '#f56c6c' : '#909399' }">{{ (node.approver || node.name).charAt(0) }}</div>
+                          <div class="node-info">
+                            <div class="node-title">{{ node.name }}</div>
+                            <div class="node-desc">
+                              <span v-if="node.approver">审批人: {{ node.approver }}</span>
+                              <span v-else>等待审批</span>
+                              <span v-if="node.time"> | {{ node.time }}</span>
+                            </div>
+                          </div>
+                          <span class="node-status" :style="{ background: node.status === 'finish' ? '#f0f9eb' : node.status === 'process' ? '#ecf5ff' : node.status === 'error' ? '#fef0f0' : '#f4f4f5', color: node.status === 'finish' ? '#67c23a' : node.status === 'process' ? '#409eff' : node.status === 'error' ? '#f56c6c' : '#909399' }">
+                            {{ getNodeStatusLabel(node.status) }}
+                          </span>
+                          <el-icon style="margin-left: 8px; color: #c0c4cc;"><ArrowRight /></el-icon>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -541,7 +629,12 @@
           
           <div v-if="currentMenu === 'logs'">
             <div class="card">
-              <div class="card-title">📝 操作记录</div>
+              <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
+                <span>📝 操作记录</span>
+                <el-button v-if="logHighlightAppId" size="small" type="info" @click="clearLogHighlight">
+                  <el-icon style="margin-right: 4px;"><Close /></el-icon>清除筛选高亮
+                </el-button>
+              </div>
               <div style="margin-bottom: 16px; display: flex; gap: 12px;">
                 <el-select v-model="logFilter.type" placeholder="操作类型" style="width: 140px;" clearable>
                   <el-option label="创建申请" value="create"></el-option>
@@ -566,13 +659,18 @@
                   :timestamp="log.time"
                   :type="getLogType(log.type)"
                   :color="getLogColor(log.type)">
-                  <div style="display: flex; align-items: center; gap: 12px;">
-                    <el-tag size="small" :type="getLogTagType(log.type)">{{ getLogTypeName(log.type) }}</el-tag>
-                    <strong>{{ log.user }}</strong>
-                    <span>{{ log.action }}</span>
-                    <el-tag size="small" effect="plain" v-if="log.applicationId">申请号: {{ log.applicationId }}</el-tag>
+                  <div :class="{ 'log-highlight': isLogHighlighted(log) }" style="padding: 4px 0;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <el-tag size="small" :type="getLogTagType(log.type)">{{ getLogTypeName(log.type) }}</el-tag>
+                      <strong>{{ log.user }}</strong>
+                      <span>{{ log.action }}</span>
+                      <span v-if="log.nodeName" style="font-size: 12px; color: #909399;">[节点: {{ log.nodeName }}]</span>
+                      <el-tag v-if="log.applicationId" size="small" effect="plain" class="log-clickable" @click="navigateToAppFromLog(log.applicationId)">
+                        申请号: {{ log.applicationId }}
+                      </el-tag>
+                    </div>
+                    <div style="color: #909399; font-size: 12px; margin-top: 4px;" v-if="log.detail">{{ log.detail }}</div>
                   </div>
-                  <div style="color: #909399; font-size: 12px; margin-top: 4px;" v-if="log.detail">{{ log.detail }}</div>
                 </el-timeline-item>
               </el-timeline>
             </div>
@@ -637,14 +735,17 @@
         </el-descriptions>
         
         <div style="margin-top: 20px;">
-          <div style="font-weight: 600; margin-bottom: 12px;">审批流程</div>
+          <div style="font-weight: 600; margin-bottom: 12px;">审批流程 <span style="font-size: 12px; color: #909399; font-weight: normal;">（点击节点查看详情）</span></div>
           <el-steps :active="getCurrentStepIndex()" finish-status="success">
             <el-step 
               v-for="(node, index) in currentApplication.flowNodes" 
               :key="index"
               :title="node.name"
               :description="node.approver || '等待中'"
-              :status="node.status">
+              :status="node.status"
+              class="clickable-step"
+              @click.native="clickStepNode(currentApplication, index)"
+              style="padding: 8px 4px; border-radius: 6px;">
             </el-step>
           </el-steps>
         </div>
@@ -708,6 +809,76 @@
         <div style="margin-top: 12px;">暂无异常提醒</div>
       </div>
     </el-dialog>
+
+    <el-drawer v-model="nodeDetailVisible" :title="'节点详情 — ' + (selectedNode ? selectedNode.name : '')" size="460px" direction="rtl">
+      <div v-if="selectedNode && selectedNodeApp">
+        <div class="node-detail-section">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <div class="node-avatar" style="width: 48px; height: 48px; font-size: 18px;" 
+                 :style="{ background: selectedNode.status === 'finish' ? '#67c23a' : selectedNode.status === 'process' ? '#409eff' : selectedNode.status === 'error' ? '#f56c6c' : '#909399' }">
+              {{ (selectedNode.approver || selectedNode.name).charAt(0) }}
+            </div>
+            <div>
+              <div style="font-weight: 600; font-size: 16px;">{{ selectedNode.name }}</div>
+              <el-tag size="small" :type="getNodeStatusTagType(selectedNode.status)">{{ getNodeStatusLabel(selectedNode.status) }}</el-tag>
+            </div>
+          </div>
+        </div>
+
+        <el-descriptions :column="1" border size="small">
+          <el-descriptions-item label="所属申请">{{ selectedNodeApp.title }}</el-descriptions-item>
+          <el-descriptions-item label="申请编号">{{ selectedNodeApp.id }}</el-descriptions-item>
+          <el-descriptions-item label="审批人">
+            <span v-if="selectedNode.approver">{{ selectedNode.approver }}</span>
+            <span v-else style="color: #c0c4cc;">待分配</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="操作时间">
+            <span v-if="selectedNode.time">{{ selectedNode.time }}</span>
+            <span v-else style="color: #c0c4cc;">未操作</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="审批意见">
+            <span v-if="selectedNode.comment">{{ selectedNode.comment }}</span>
+            <span v-else style="color: #c0c4cc;">无</span>
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <div style="margin-top: 24px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="font-weight: 600; font-size: 14px;">📄 关联操作记录</div>
+            <el-button size="small" type="primary" link @click="navigateToNodeLogs(selectedNodeApp.id, selectedNode.name)">
+              查看全部记录 <el-icon><ArrowRight /></el-icon>
+            </el-button>
+          </div>
+          <div v-if="nodeRelatedLogs.length > 0">
+            <div v-for="log in nodeRelatedLogs" :key="log.id" class="node-log-item">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <el-tag size="small" :type="getLogTagType(log.type)">{{ getLogTypeName(log.type) }}</el-tag>
+                <span style="font-weight: 500; font-size: 13px;">{{ log.user }}</span>
+                <span style="font-size: 12px; color: #909399;">{{ log.time }}</span>
+              </div>
+              <div style="font-size: 13px; color: #606266;">{{ log.action }}</div>
+              <div v-if="log.detail" style="font-size: 12px; color: #909399; margin-top: 4px;">{{ log.detail }}</div>
+            </div>
+          </div>
+          <div v-else style="text-align: center; padding: 24px; color: #c0c4cc;">
+            <el-icon :size="32"><Document /></el-icon>
+            <div style="margin-top: 8px;">暂无关联操作记录</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #ebeef5;">
+          <div style="font-weight: 600; font-size: 14px; margin-bottom: 12px;">🔗 快捷操作</div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <el-button size="small" @click="viewApplication(selectedNodeApp); nodeDetailVisible = false">
+              <el-icon style="margin-right: 4px;"><View /></el-icon>查看申请详情
+            </el-button>
+            <el-button size="small" type="primary" @click="navigateToNodeLogs(selectedNodeApp.id, selectedNode.name); nodeDetailVisible = false">
+              <el-icon style="margin-right: 4px;"><Tickets /></el-icon>查看完整记录
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </el-drawer>
   </div>
   
   <script src="data.js"></script>
