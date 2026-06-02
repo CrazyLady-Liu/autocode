@@ -2,11 +2,13 @@ import { useState } from "react";
 import TodayPlan from "@/components/TodayPlan";
 import CourseList from "@/components/CourseList";
 import StudyRecords from "@/components/StudyRecords";
+import CourseRecords from "@/components/CourseRecords";
 import { mockDayPlan, mockCourses, mockRecords } from "@/data/mockStudy";
-import type { TodayTask } from "@/types/study";
+import type { TodayTask, Course } from "@/types/study";
 
 export default function Home() {
   const [tasks, setTasks] = useState<TodayTask[]>(mockDayPlan.tasks);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
   const handleToggleTask = (id: string) => {
     setTasks((prev) =>
@@ -51,8 +53,16 @@ export default function Home() {
             />
           </div>
 
-          <div className="col-span-4">
-            <CourseList courses={mockCourses} />
+          <div className="col-span-4 space-y-5">
+            <CourseList
+              courses={mockCourses}
+              selectedId={selectedCourse?.id || null}
+              onSelect={setSelectedCourse}
+            />
+            <CourseRecords
+              course={selectedCourse}
+              records={mockRecords}
+            />
           </div>
 
           <div className="col-span-3">
