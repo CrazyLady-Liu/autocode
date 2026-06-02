@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function GridBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -69,7 +69,62 @@ function FloatingOrb({
   );
 }
 
+function TypewriterText({
+  text,
+  delay = 0,
+  speed = 120,
+  className,
+  gradient = false,
+  onDone,
+}: {
+  text: string;
+  delay?: number;
+  speed?: number;
+  className?: string;
+  gradient?: boolean;
+  onDone?: () => void;
+}) {
+  const [displayed, setDisplayed] = useState("");
+  const [showCursor, setShowCursor] = useState(true);
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    const startTimer = setTimeout(() => setStarted(true), delay);
+    return () => clearTimeout(startTimer);
+  }, [delay]);
+
+  useEffect(() => {
+    if (!started) return;
+    if (displayed.length < text.length) {
+      const timer = setTimeout(() => {
+        setDisplayed(text.slice(0, displayed.length + 1));
+      }, speed);
+      return () => clearTimeout(timer);
+    } else {
+      onDone?.();
+      const blink = setInterval(() => setShowCursor((v) => !v), 530);
+      return () => clearInterval(blink);
+    }
+  }, [displayed, started, text, speed, onDone]);
+
+  const spanClass = gradient
+    ? "bg-gradient-to-r from-accent-cyan via-accent-violet to-accent-rose bg-clip-text text-transparent"
+    : "";
+
+  return (
+    <span className={className}>
+      <span className={spanClass}>{displayed}</span>
+      {showCursor && (
+        <span className="inline-block w-[3px] h-[0.85em] bg-accent-cyan ml-1 align-middle animate-pulse" />
+      )}
+    </span>
+  );
+}
+
 export default function Home() {
+  const [helloDone, setHelloDone] = useState(false);
+  const [worldDone, setWorldDone] = useState(false);
+
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-surface">
       <div className="absolute inset-0 bg-gradient-to-br from-accent-cyan/5 via-transparent to-accent-violet/5 animate-gradient" />
@@ -98,36 +153,53 @@ export default function Home() {
 
         <div className="animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
           <h1 className="font-display font-extrabold text-7xl sm:text-8xl md:text-9xl tracking-tight text-white animate-glow">
-            Hello
-            <span className="bg-gradient-to-r from-accent-cyan via-accent-violet to-accent-rose bg-clip-text text-transparent">
-              {" "}
-              World
-            </span>
+            <TypewriterText
+              text="Hello"
+              delay={800}
+              speed={150}
+              onDone={() => setHelloDone(true)}
+            />
+            {helloDone && (
+              <>
+                {" "}
+                <TypewriterText
+                  text="World"
+                  delay={200}
+                  speed={140}
+                  gradient
+                  onDone={() => setWorldDone(true)}
+                />
+              </>
+            )}
           </h1>
         </div>
 
         <div
           className="animate-line mt-8 mx-auto h-px w-48 bg-gradient-to-r from-transparent via-accent-cyan/50 to-transparent origin-center"
-          style={{ animationDelay: "0.9s" }}
+          style={{ animationDelay: worldDone ? "0s" : "999s" }}
         />
 
-        <div className="animate-fade-in-up" style={{ animationDelay: "1.2s" }}>
-          <p className="font-mono text-sm text-white/30 mt-8 tracking-wider">
-            built with React + Vite + Tailwind
-          </p>
-        </div>
+        {worldDone && (
+          <div className="animate-fade-in-up">
+            <p className="font-mono text-sm text-white/30 mt-8 tracking-wider">
+              built with React + Vite + Tailwind
+            </p>
+          </div>
+        )}
 
-        <div className="flex items-center justify-center gap-3 mt-10 animate-fade-in-up" style={{ animationDelay: "1.5s" }}>
-          {["bg-accent-cyan", "bg-accent-violet", "bg-accent-rose"].map(
-            (color, i) => (
-              <span
-                key={color}
-                className={`w-1.5 h-1.5 rounded-full ${color} animate-dot`}
-                style={{ animationDelay: `${i * 0.5}s` }}
-              />
-            )
-          )}
-        </div>
+        {worldDone && (
+          <div className="flex items-center justify-center gap-3 mt-10 animate-fade-in-up">
+            {["bg-accent-cyan", "bg-accent-violet", "bg-accent-rose"].map(
+              (color, i) => (
+                <span
+                  key={color}
+                  className={`w-1.5 h-1.5 rounded-full ${color} animate-dot`}
+                  style={{ animationDelay: `${i * 0.5}s` }}
+                />
+              )
+            )}
+          </div>
+        )}
       </div>
 
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 animate-fade-in-up" style={{ animationDelay: "2s" }}>
