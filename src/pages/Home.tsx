@@ -123,7 +123,6 @@ function TypewriterText({
 
 export default function Home() {
   const [helloDone, setHelloDone] = useState(false);
-  const [worldDone, setWorldDone] = useState(false);
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-surface">
@@ -159,27 +158,15 @@ export default function Home() {
               speed={150}
               onDone={() => setHelloDone(true)}
             />
-            {helloDone && (
-              <>
-                {" "}
-                <TypewriterText
-                  text="World"
-                  delay={200}
-                  speed={140}
-                  gradient
-                  onDone={() => setWorldDone(true)}
-                />
-              </>
-            )}
           </h1>
         </div>
 
         <div
           className="animate-line mt-8 mx-auto h-px w-48 bg-gradient-to-r from-transparent via-accent-cyan/50 to-transparent origin-center"
-          style={{ animationDelay: worldDone ? "0s" : "999s" }}
+          style={{ animationDelay: helloDone ? "0s" : "999s" }}
         />
 
-        {worldDone && (
+        {helloDone && (
           <div className="animate-fade-in-up">
             <p className="font-mono text-sm text-white/30 mt-8 tracking-wider">
               built with React + Vite + Tailwind
@@ -187,7 +174,7 @@ export default function Home() {
           </div>
         )}
 
-        {worldDone && (
+        {helloDone && (
           <div className="flex items-center justify-center gap-3 mt-10 animate-fade-in-up">
             {["bg-accent-cyan", "bg-accent-violet", "bg-accent-rose"].map(
               (color, i) => (
