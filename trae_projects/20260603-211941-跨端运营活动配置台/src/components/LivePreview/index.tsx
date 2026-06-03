@@ -1,12 +1,14 @@
 import { useActivityStore } from '../../store/useActivityStore';
-import { CHANNEL_TYPE_MAP, CHANNEL_STATUS_MAP } from '../../types/activity';
-import { Smartphone, Monitor, Tablet, Gift, Tag, Clock, Users } from 'lucide-react';
+import { CHANNEL_TYPE_MAP, CHANNEL_STATUS_MAP, ACTIVITY_STATUS_MAP } from '../../types/activity';
+import { Smartphone, Monitor, Tablet, Gift, Tag, Clock, Users, Play, Pause, FileText, CheckCircle, XCircle } from 'lucide-react';
 
 export const LivePreview = () => {
   const {
     selectedActivity,
     previewChannelId,
     selectPreviewChannel,
+    selectedChannelId,
+    selectChannel,
   } = useActivityStore();
 
   if (!selectedActivity) {
@@ -21,8 +23,24 @@ export const LivePreview = () => {
   }
 
   const enabledChannels = selectedActivity.channels.filter(c => c.enabled && c.status === 'available');
-  const activeChannelId = previewChannelId || enabledChannels[0]?.id;
+  const activeChannelId = previewChannelId || selectedChannelId || enabledChannels[0]?.id;
   const activeChannel = selectedActivity.channels.find(c => c.id === activeChannelId);
+
+  const handleChannelChange = (channelId: string) => {
+    selectPreviewChannel(channelId);
+    selectChannel(channelId);
+  };
+
+  const getActivityStatusIcon = () => {
+    switch (selectedActivity.status) {
+      case 'active': return <Play size={12} />;
+      case 'paused': return <Pause size={12} />;
+      case 'ended': return <XCircle size={12} />;
+      case 'draft': return <FileText size={12} />;
+      case 'pending': return <CheckCircle size={12} />;
+      default: return <FileText size={12} />;
+    }
+  };
 
   const activeRules = selectedActivity.rules.filter(rule =>
     rule.channelRules.some(cr => cr.channelId === activeChannelId && cr.enabled)
@@ -83,7 +101,7 @@ export const LivePreview = () => {
             enabledChannels.map(channel => (
               <button
                 key={channel.id}
-                onClick={() => selectPreviewChannel(channel.id)}
+                onClick={() => handleChannelChange(channel.id)}
                 className={`px-2.5 py-1 text-xs rounded-md flex-shrink-0 transition-colors ${
                   activeChannelId === channel.id
                     ? 'bg-[#1E3A5F] text-white'
@@ -125,11 +143,17 @@ export const LivePreview = () => {
             )}
 
             <div className="p-3">
-              <div className="flex items-center gap-2 mb-3">
-                <Tag size={12} className="text-[#2DD4BF]" />
-                <span className="text-xs text-gray-500">
-                  {activeChannel ? CHANNEL_TYPE_MAP[activeChannel.type] + '渠道' : '请选择渠道'}
-                </span>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] text-white ${ACTIVITY_STATUS_MAP[selectedActivity.status].color}`}>
+                  {getActivityStatusIcon()}
+                  {ACTIVITY_STATUS_MAP[selectedActivity.status].label}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Tag size={10} className="text-[#2DD4BF]" />
+                  <span className="text-[10px] text-gray-500">
+                    {activeChannel ? CHANNEL_TYPE_MAP[activeChannel.type] + '渠道' : '请选择渠道'}
+                  </span>
+                </div>
                 {activeChannel && (
                   <span className={`px-1.5 py-0.5 text-[10px] rounded-full text-white ${CHANNEL_STATUS_MAP[activeChannel.status].color}`}>
                     {CHANNEL_STATUS_MAP[activeChannel.status].label}
