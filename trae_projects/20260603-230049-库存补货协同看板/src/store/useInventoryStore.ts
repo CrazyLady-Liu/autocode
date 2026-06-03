@@ -23,6 +23,7 @@ interface InventoryState {
   selectedSKUId: string | null;
   selectedWarehouseId: string | null;
   filterRiskLevel: string;
+  linkedSkuId: string | null;
   isLoading: boolean;
   lastUpdate: string;
   
@@ -30,6 +31,8 @@ interface InventoryState {
   setSelectedSKU: (id: string | null) => void;
   setSelectedWarehouse: (id: string | null) => void;
   setFilterRiskLevel: (level: string) => void;
+  setLinkedSkuId: (id: string | null) => void;
+  clearLinkedSkuId: () => void;
   acknowledgeAlert: (alertId: string) => void;
   resolveAlert: (alertId: string) => void;
   approveSuggestion: (suggestionId: string) => void;
@@ -48,6 +51,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   selectedSKUId: null,
   selectedWarehouseId: null,
   filterRiskLevel: 'all',
+  linkedSkuId: null,
   isLoading: true,
   lastUpdate: '',
 
@@ -80,6 +84,8 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   setSelectedSKU: (id) => set({ selectedSKUId: id }),
   setSelectedWarehouse: (id) => set({ selectedWarehouseId: id }),
   setFilterRiskLevel: (level) => set({ filterRiskLevel: level }),
+  setLinkedSkuId: (id) => set({ linkedSkuId: id }),
+  clearLinkedSkuId: () => set({ linkedSkuId: null }),
 
   acknowledgeAlert: (alertId) => {
     set(state => ({

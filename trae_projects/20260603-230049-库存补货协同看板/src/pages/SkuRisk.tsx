@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle,
@@ -16,6 +17,7 @@ import {
   Users,
   Volume2,
   VolumeX,
+  ExternalLink,
 } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
 import RiskTag from '@/components/common/RiskTag';
@@ -29,11 +31,19 @@ import { cn } from '@/lib/utils';
 import type { SKUWithRisk } from '@/types';
 
 export default function SkuRisk() {
-  const { skusWithRisk, alerts, filterRiskLevel, setFilterRiskLevel, acknowledgeAlert, resolveAlert, getSKUById } = useInventoryStore();
+  const { skusWithRisk, alerts, filterRiskLevel, setFilterRiskLevel, acknowledgeAlert, resolveAlert, getSKUById, linkedSkuId, setLinkedSkuId, clearLinkedSkuId } = useInventoryStore();
   const { suppliers } = useSupplierStore();
+  const navigate = useNavigate();
   const [selectedSKUId, setSelectedSKUId] = useState<string | null>(null);
   const [showNoiseReducer, setShowNoiseReducer] = useState(false);
   const [noiseThreshold, setNoiseThreshold] = useState(5);
+
+  useEffect(() => {
+    if (linkedSkuId) {
+      setSelectedSKUId(linkedSkuId);
+      clearLinkedSkuId();
+    }
+  }, [linkedSkuId, clearLinkedSkuId]);
 
   const filters = [
     { value: 'all', label: '全部', color: '#6B7280' },
@@ -534,6 +544,17 @@ export default function SkuRisk() {
                           </span>
                         </div>
                       </div>
+                      <button
+                        onClick={() => {
+                          setLinkedSkuId(selectedSKU.id);
+                          navigate('/replenishment');
+                        }}
+                        className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors"
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        查看补货建议
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
 

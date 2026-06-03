@@ -1,4 +1,5 @@
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShoppingCart,
@@ -18,6 +19,9 @@ import {
   XCircle,
   AlertCircle,
   Search,
+  ExternalLink,
+  ShieldAlert,
+  X,
 } from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
 import KPICard from '@/components/common/KPICard';
@@ -40,13 +44,31 @@ import {
 import type { ReplenishmentSuggestion, SKUWithRisk } from '@/types';
 
 export default function Replenishment() {
-  const { suggestions, skusWithRisk, approveSuggestion, orderSuggestion, isLoading } = useInventoryStore();
+  const { suggestions, skusWithRisk, approveSuggestion, orderSuggestion, isLoading, linkedSkuId, setLinkedSkuId, clearLinkedSkuId } = useInventoryStore();
   const { suppliers } = useSupplierStore();
+  const navigate = useNavigate();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [linkedFrom, setLinkedFrom] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (linkedSkuId) {
+      setLinkedFrom(linkedSkuId);
+      const matched = suggestions.find(s => s.skuId === linkedSkuId);
+      if (matched) {
+        setExpandedId(matched.id);
+        setSearchQuery('');
+        setFilterStatus('all');
+        setFilterPriority('all');
+      }
+      clearLinkedSkuId();
+      const timer = setTimeout(() => setLinkedFrom(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [linkedSkuId, suggestions, clearLinkedSkuId]);
 
   const filteredSuggestions = suggestions.filter((s) => {
     const matchStatus = filterStatus === 'all' || s.status === filterStatus;
@@ -343,6 +365,24 @@ export default function Replenishment() {
                   批量下单
                 </button>
               </div>
+            </motion.div>
+          )}
+
+          {linkedFrom && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-purple-400" />
+                <span className="text-purple-300 text-sm">
+                  从 SKU 风险页面联动 — 已定位到对应补货建议
+                </span>
+              </div>
+              <button onClick={() => setLinkedFrom(null)} className="p-1 hover:bg-slate-700 rounded">
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
             </motion.div>
           )}
 
