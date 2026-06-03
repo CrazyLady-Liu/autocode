@@ -37,13 +37,18 @@ export default function SkuRisk() {
   const [selectedSKUId, setSelectedSKUId] = useState<string | null>(null);
   const [showNoiseReducer, setShowNoiseReducer] = useState(false);
   const [noiseThreshold, setNoiseThreshold] = useState(5);
+  const [linkedFrom, setLinkedFrom] = useState<string | null>(null);
 
   useEffect(() => {
     if (linkedSkuId) {
       setSelectedSKUId(linkedSkuId);
+      setLinkedFrom(linkedSkuId);
+      setFilterRiskLevel('all');
       clearLinkedSkuId();
+      const timer = setTimeout(() => setLinkedFrom(null), 5000);
+      return () => clearTimeout(timer);
     }
-  }, [linkedSkuId, clearLinkedSkuId]);
+  }, [linkedSkuId, clearLinkedSkuId, setFilterRiskLevel]);
 
   const filters = [
     { value: 'all', label: '全部', color: '#6B7280' },
@@ -137,7 +142,8 @@ export default function SkuRisk() {
       className={cn(
         'cursor-pointer border-b border-slate-700/50 transition-colors',
         isHighlighted && 'bg-red-500/5',
-        selectedSKUId === sku.id && 'bg-blue-500/10'
+        selectedSKUId === sku.id && 'bg-blue-500/10',
+        linkedFrom === sku.id && 'bg-purple-500/10 ring-1 ring-purple-500/30'
       )}
     >
       <td className="py-4 px-4">
@@ -220,6 +226,24 @@ export default function SkuRisk() {
           </button>
         </div>
       </div>
+
+      {linkedFrom && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <ExternalLink className="w-4 h-4 text-purple-400" />
+            <span className="text-purple-300 text-sm">
+              从补货建议页面联动 — 已定位到对应 SKU 风险详情
+            </span>
+          </div>
+          <button onClick={() => setLinkedFrom(null)} className="p-1 hover:bg-slate-700 rounded">
+            <X className="w-4 h-4 text-slate-400" />
+          </button>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {filters.map(filter => {

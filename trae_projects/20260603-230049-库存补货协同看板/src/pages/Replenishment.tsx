@@ -448,7 +448,7 @@ export default function Replenishment() {
                           transition={{ delay: 0.1 * index }}
                           className={`hover:bg-slate-700/30 transition-colors ${
                             hasSupplierIssue ? 'bg-orange-500/5' : ''
-                          }`}
+                          } ${linkedFrom === suggestion.skuId ? 'bg-purple-500/10 ring-1 ring-purple-500/30' : ''}`}
                         >
                           <td className="py-3 px-2">
                             {suggestion.status === 'pending' && (
@@ -537,6 +537,16 @@ export default function Replenishment() {
                                 ) : (
                                   <ChevronDown className="w-4 h-4" />
                                 )}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setLinkedSkuId(suggestion.skuId);
+                                  navigate('/sku-risk');
+                                }}
+                                className="p-1.5 hover:bg-purple-500/20 rounded-lg transition-colors text-purple-400 hover:text-purple-300"
+                                title="查看 SKU 风险"
+                              >
+                                <ExternalLink className="w-4 h-4" />
                               </button>
                               {suggestion.status === 'pending' && (
                                 <>
