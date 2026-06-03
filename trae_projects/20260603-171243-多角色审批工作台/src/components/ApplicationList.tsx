@@ -2,8 +2,9 @@ import { useApprovalStore } from "@/store/useApprovalStore";
 import {
   APPLICATION_TYPE_LABELS,
   APPLICATION_STATUS_LABELS,
+  NODE_STATUS_LABELS,
 } from "@/types";
-import type { ApplicationStatus, ApplicationType } from "@/types";
+import type { ApplicationStatus, ApplicationType, NodeStatus } from "@/types";
 import {
   Search,
   Filter,
@@ -12,6 +13,10 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
+  UserX,
+  Users,
+  GitBranch,
+  X,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -45,21 +50,100 @@ const statusConfig: Record<
   },
 };
 
+const APPROVAL_ROLES = ["部门主管", "财务审核", "超级管理员"];
+
+function FilterChip({
+  label,
+  icon,
+  active,
+  onClick,
+  color = "amber",
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  active: boolean;
+  onClick: () => void;
+  color?: "amber" | "emerald" | "rose" | "red" | "slate" | "blue";
+}) {
+  const colorMap = {
+    amber: "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-300 dark:border-amber-700",
+    emerald: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700",
+    rose: "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border-rose-300 dark:border-rose-700",
+    red: "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300 border-red-300 dark:border-red-700",
+    slate: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-600",
+    blue: "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-300 dark:border-blue-700",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className={clsx(
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border transition-all",
+        active ? colorMap[color] : "bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+      )}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function FilterSection({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-1 mb-1">
+        {icon}
+        <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+          {title}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function ApplicationList() {
   const {
     selectedApplicationId,
     selectApplication,
     statusFilter,
     typeFilter,
+    roleFilter,
+    nodeStatusFilter,
     searchQuery,
     setStatusFilter,
     setTypeFilter,
+    setRoleFilter,
+    setNodeStatusFilter,
     setSearchQuery,
     getFilteredApplications,
     getApplicationAlerts,
   } = useApprovalStore();
 
   const filteredApps = getFilteredApplications();
+
+  const hasActiveFilter =
+    statusFilter !== "all" ||
+    typeFilter !== "all" ||
+    roleFilter !== "all" ||
+    nodeStatusFilter !== "all";
+
+  const clearAllFilters = () => {
+    setStatusFilter("all");
+    setTypeFilter("all");
+    setRoleFilter("all");
+    setNodeStatusFilter("all");
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -83,39 +167,130 @@ export default function ApplicationList() {
             className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition"
           />
         </div>
-        <div className="flex gap-1.5 flex-wrap">
-          <div className="flex items-center gap-1">
-            <Filter className="w-3 h-3 text-slate-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as ApplicationStatus | "all")
-              }
-              className="text-xs py-1 px-2 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
-            >
-              <option value="all">全部状态</option>
-              {Object.entries(APPLICATION_STATUS_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </div>
-          <select
-            value={typeFilter}
-            onChange={(e) =>
-              setTypeFilter(e.target.value as ApplicationType | "all")
-            }
-            className="text-xs py-1 px-2 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
+
+        <div className="space-y-2">
+          <FilterSection
+            title="申请状态"
+            icon={<Filter className="w-3 h-3 text-slate-400" />}
           >
-            <option value="all">全部类型</option>
-            {Object.entries(APPLICATION_TYPE_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
+            <FilterChip
+              label="全部"
+              active={statusFilter === "all"}
+              onClick={() => setStatusFilter("all")}
+              color="slate"
+            />
+            {Object.entries(APPLICATION_STATUS_LABELS).map(([k, v]) => {
+              const statusKey = k as ApplicationStatus;
+              const colors: Record<ApplicationStatus, "amber" | "emerald" | "rose" | "red"> = {
+                pending: "amber",
+                approved: "emerald",
+                rejected: "rose",
+                timeout: "red",
+              };
+              return (
+                <FilterChip
+                  key={k}
+                  label={v}
+                  icon={statusConfig[statusKey].icon}
+                  active={statusFilter === k}
+                  onClick={() => setStatusFilter(statusFilter === k ? "all" : statusKey)}
+                  color={colors[statusKey]}
+                />
+              );
+            })}
+          </FilterSection>
+
+          <FilterSection
+            title="审批角色"
+            icon={<Users className="w-3 h-3 text-slate-400" />}
+          >
+            <FilterChip
+              label="全部"
+              active={roleFilter === "all"}
+              onClick={() => setRoleFilter("all")}
+              color="slate"
+            />
+            {APPROVAL_ROLES.map((role) => (
+              <FilterChip
+                key={role}
+                label={role}
+                active={roleFilter === role}
+                onClick={() => setRoleFilter(roleFilter === role ? "all" : role)}
+                color="blue"
+              />
             ))}
-          </select>
+          </FilterSection>
+
+          <FilterSection
+            title="节点状态"
+            icon={<GitBranch className="w-3 h-3 text-slate-400" />}
+          >
+            <FilterChip
+              label="全部"
+              active={nodeStatusFilter === "all"}
+              onClick={() => setNodeStatusFilter("all")}
+              color="slate"
+            />
+            {Object.entries(NODE_STATUS_LABELS).map(([k, v]) => {
+              const nodeKey = k as NodeStatus;
+              const colors: Record<NodeStatus, "amber" | "emerald" | "rose" | "red"> = {
+                pending: "amber",
+                approved: "emerald",
+                rejected: "rose",
+                timeout: "red",
+                unassigned: "red",
+              };
+              const icons: Record<NodeStatus, React.ReactNode> = {
+                pending: <Clock className="w-2.5 h-2.5" />,
+                approved: <CheckCircle2 className="w-2.5 h-2.5" />,
+                rejected: <XCircle className="w-2.5 h-2.5" />,
+                timeout: <AlertTriangle className="w-2.5 h-2.5" />,
+                unassigned: <UserX className="w-2.5 h-2.5" />,
+              };
+              return (
+                <FilterChip
+                  key={k}
+                  label={v}
+                  icon={icons[nodeKey]}
+                  active={nodeStatusFilter === k}
+                  onClick={() => setNodeStatusFilter(nodeStatusFilter === k ? "all" : nodeKey)}
+                  color={colors[nodeKey]}
+                />
+              );
+            })}
+          </FilterSection>
+
+          <FilterSection
+            title="申请类型"
+            icon={<FileText className="w-3 h-3 text-slate-400" />}
+          >
+            <FilterChip
+              label="全部"
+              active={typeFilter === "all"}
+              onClick={() => setTypeFilter("all")}
+              color="slate"
+            />
+            {Object.entries(APPLICATION_TYPE_LABELS).map(([k, v]) => (
+              <FilterChip
+                key={k}
+                label={v}
+                active={typeFilter === k}
+                onClick={() => setTypeFilter(typeFilter === k ? "all" : (k as ApplicationType))}
+                color="amber"
+              />
+            ))}
+          </FilterSection>
         </div>
+
+        {hasActiveFilter && (
+          <button
+            onClick={clearAllFilters}
+            className="mt-2 flex items-center gap-1 text-[10px] text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
+          >
+            <X className="w-3 h-3" />
+            清除所有筛选
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -123,6 +298,14 @@ export default function ApplicationList() {
           <div className="flex flex-col items-center justify-center py-12 text-slate-400">
             <FileText className="w-10 h-10 mb-2 opacity-30" />
             <p className="text-xs">暂无匹配的申请</p>
+            {hasActiveFilter && (
+              <button
+                onClick={clearAllFilters}
+                className="mt-2 text-[10px] text-amber-500 hover:text-amber-600 transition-colors"
+              >
+                清除筛选条件
+              </button>
+            )}
           </div>
         ) : (
           filteredApps.map((app) => {

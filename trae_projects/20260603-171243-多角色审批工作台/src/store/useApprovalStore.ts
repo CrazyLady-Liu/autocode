@@ -8,6 +8,7 @@ import type {
   Role,
   ApplicationType,
   ApplicationStatus,
+  NodeStatus,
 } from "@/types";
 import {
   applications as mockApplications,
@@ -31,6 +32,8 @@ interface ApprovalStore {
   permissionViolation: string | null;
   statusFilter: ApplicationStatus | "all";
   typeFilter: ApplicationType | "all";
+  roleFilter: string;
+  nodeStatusFilter: NodeStatus | "all";
   searchQuery: string;
 
   selectApplication: (id: string | null) => void;
@@ -42,6 +45,8 @@ interface ApprovalStore {
   clearPermissionViolation: () => void;
   setStatusFilter: (filter: ApplicationStatus | "all") => void;
   setTypeFilter: (filter: ApplicationType | "all") => void;
+  setRoleFilter: (filter: string) => void;
+  setNodeStatusFilter: (filter: NodeStatus | "all") => void;
   setSearchQuery: (query: string) => void;
 
   getSelectedApplication: () => Application | undefined;
@@ -68,6 +73,8 @@ export const useApprovalStore = create<ApprovalStore>((set, get) => ({
   permissionViolation: null,
   statusFilter: "all",
   typeFilter: "all",
+  roleFilter: "all",
+  nodeStatusFilter: "all",
   searchQuery: "",
 
   selectApplication: (id) => set({ selectedApplicationId: id, selectedNodeId: null, permissionViolation: null }),
@@ -256,6 +263,8 @@ export const useApprovalStore = create<ApprovalStore>((set, get) => ({
 
   setStatusFilter: (filter) => set({ statusFilter: filter }),
   setTypeFilter: (filter) => set({ typeFilter: filter }),
+  setRoleFilter: (filter) => set({ roleFilter: filter }),
+  setNodeStatusFilter: (filter) => set({ nodeStatusFilter: filter }),
   setSearchQuery: (query) => set({ searchQuery: query }),
 
   getSelectedApplication: () => {
@@ -311,6 +320,16 @@ export const useApprovalStore = create<ApprovalStore>((set, get) => ({
         !a.applicant.toLowerCase().includes(state.searchQuery.toLowerCase())
       )
         return false;
+      if (state.roleFilter !== "all") {
+        const flow = state.flows.find((f) => f.applicationId === a.id);
+        if (!flow || !flow.nodes.some((n) => n.role === state.roleFilter))
+          return false;
+      }
+      if (state.nodeStatusFilter !== "all") {
+        const flow = state.flows.find((f) => f.applicationId === a.id);
+        if (!flow || !flow.nodes.some((n) => n.status === state.nodeStatusFilter))
+          return false;
+      }
       return true;
     });
   },
