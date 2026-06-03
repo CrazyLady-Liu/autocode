@@ -13,8 +13,22 @@ interface ChannelCardProps {
 }
 
 const ChannelCard = ({ channel, hasError, hasWarning }: ChannelCardProps) => {
-  const { toggleChannel, updateChannelParams, validationResult } = useActivityStore();
+  const { toggleChannel, updateChannelParams, validationResult, selectChannel, selectedChannelId, selectedActivity } = useActivityStore();
   const [expanded, setExpanded] = useState(false);
+
+  const isSelected = selectedChannelId === channel.id;
+
+  const handleToggle = (enabled: boolean) => {
+    toggleChannel(channel.id, enabled);
+    if (enabled && channel.status === 'available') {
+      selectChannel(channel.id);
+    } else if (!enabled && isSelected && selectedActivity) {
+      const nextEnabledChannel = selectedActivity.channels.find(
+        c => c.id !== channel.id && c.enabled && c.status === 'available'
+      );
+      selectChannel(nextEnabledChannel?.id || null);
+    }
+  };
 
   const isDisabled = channel.status !== 'available';
   const warnings = validationResult?.warnings.filter(w => w.location === `channels-${channel.id}`) || [];
@@ -27,15 +41,24 @@ const ChannelCard = ({ channel, hasError, hasWarning }: ChannelCardProps) => {
     { value: 'popup', label: '弹窗' },
   ];
 
+  const handleHeaderClick = (e: React.MouseEvent) => {
+    setExpanded(!expanded);
+    if (channel.enabled && channel.status === 'available') {
+      selectChannel(channel.id);
+    }
+  };
+
   return (
     <div
       className={`border rounded-lg mb-2 transition-all ${
-        hasError ? 'border-red-300 bg-red-50/30' : hasWarning ? 'border-yellow-300 bg-yellow-50/30' : 'border-gray-200'
+        isSelected && channel.enabled ? 'border-[#2DD4BF] ring-1 ring-[#2DD4BF] bg-teal-50/50' :
+        hasError ? 'border-red-300 bg-red-50/30' :
+        hasWarning ? 'border-yellow-300 bg-yellow-50/30' : 'border-gray-200'
       }`}
     >
       <div
-        className="flex items-center gap-3 p-3 cursor-pointer"
-        onClick={() => setExpanded(!expanded)}
+        className={`flex items-center gap-3 p-3 cursor-pointer ${channel.enabled ? 'hover:bg-gray-50' : ''}`}
+        onClick={handleHeaderClick}
       >
         {expanded ? <ChevronDown size={16} className="text-gray-500" /> : <ChevronRight size={16} className="text-gray-500" />}
 
@@ -64,7 +87,7 @@ const ChannelCard = ({ channel, hasError, hasWarning }: ChannelCardProps) => {
           )}
           <ToggleSwitch
             checked={channel.enabled}
-            onChange={(enabled) => toggleChannel(channel.id, enabled)}
+            onChange={handleToggle}
             disabled={isDisabled}
           />
         </div>
