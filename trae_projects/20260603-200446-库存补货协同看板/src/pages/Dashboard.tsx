@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Package, AlertTriangle, Truck, Activity } from 'lucide-react';
 import { KPICard } from '../components/dashboard/KPICard';
 import { WarehouseList } from '../components/dashboard/WarehouseList';
@@ -11,6 +11,7 @@ import { Warehouse, Sku, RestockSuggestion as RestockSuggestionType } from '../d
 
 export const Dashboard: React.FC = () => {
   const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse>(warehouses[0]);
+  const [linkedSkuId, setLinkedSkuId] = useState<string | null>(null);
 
   const totalSkus = warehouses.reduce((sum, w) => sum + w.totalSkus, 0);
   const totalOutOfStock = warehouses.reduce((sum, w) => sum + w.outOfStock, 0);
@@ -18,6 +19,10 @@ export const Dashboard: React.FC = () => {
   const avgHealthScore = Math.round(
     warehouses.reduce((sum, w) => sum + w.healthScore, 0) / warehouses.length
   );
+
+  const handleSkuSelect = useCallback((skuId: string) => {
+    setLinkedSkuId(prev => prev === skuId ? null : skuId);
+  }, []);
 
   const handleRestock = (sku: Sku) => {
     alert(`已为 ${sku.name} 发起补货请求`);
@@ -77,6 +82,8 @@ export const Dashboard: React.FC = () => {
             skus={skus}
             suppliers={suppliers}
             onRestock={handleRestock}
+            linkedSkuId={linkedSkuId}
+            onSkuSelect={handleSkuSelect}
           />
         </div>
       </div>
@@ -86,6 +93,8 @@ export const Dashboard: React.FC = () => {
           <RestockSuggestions
             suggestions={restockSuggestions}
             onApprove={handleApproveRestock}
+            linkedSkuId={linkedSkuId}
+            onSkuSelect={handleSkuSelect}
           />
         </div>
         <div className="col-span-1">
