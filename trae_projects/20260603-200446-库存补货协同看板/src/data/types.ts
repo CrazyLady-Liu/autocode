@@ -2,6 +2,9 @@ export type RiskLevel = 'high' | 'medium' | 'low';
 export type SupplierStatus = 'active' | 'inactive' | 'delayed';
 export type Priority = 'urgent' | 'high' | 'medium' | 'low';
 export type WarehouseStatus = 'normal' | 'warning' | 'critical';
+export type CommunicationType = 'call' | 'email' | 'meeting' | 'wechat';
+export type CommunicationResult = 'positive' | 'neutral' | 'negative';
+export type ShipmentStatus = 'pending' | 'shipped' | 'in-transit' | 'delivered' | 'delayed';
 
 export interface Warehouse {
   id: string;
@@ -40,6 +43,28 @@ export interface RestockSuggestion {
   reason: string;
 }
 
+export interface CommunicationRecord {
+  id: string;
+  supplierId: string;
+  type: CommunicationType;
+  subject: string;
+  content: string;
+  date: string;
+  result: CommunicationResult;
+  operator: string;
+}
+
+export interface InTransitShipment {
+  id: string;
+  supplierId: string;
+  skuName: string;
+  quantity: number;
+  status: ShipmentStatus;
+  shippedDate: string;
+  estimatedArrivalDate: string;
+  trackingNumber?: string;
+}
+
 export interface Supplier {
   id: string;
   name: string;
@@ -49,6 +74,8 @@ export interface Supplier {
   contactPerson: string;
   contactPhone: string;
   supportedCategories: string[];
+  lastCommunication?: CommunicationRecord;
+  inTransitShipments?: InTransitShipment[];
 }
 
 export interface StockTrend {

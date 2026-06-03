@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { AlertTriangle, Package, Clock, User, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { AlertTriangle, Package, Clock, User, ChevronDown, ShoppingCart, Link2 } from 'lucide-react';
 import { Card, CardHeader } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -10,13 +10,23 @@ interface SkuRiskPanelProps {
   skus: Sku[];
   suppliers: Supplier[];
   onRestock?: (sku: Sku) => void;
+  linkedSkuId?: string | null;
+  onSkuSelect?: (skuId: string) => void;
 }
 
 type TabType = 'all' | 'high' | 'medium' | 'low';
 
-export const SkuRiskPanel: React.FC<SkuRiskPanelProps> = ({ skus, suppliers, onRestock }) => {
+export const SkuRiskPanel: React.FC<SkuRiskPanelProps> = ({ 
+  skus, 
+  suppliers, 
+  onRestock,
+  linkedSkuId,
+  onSkuSelect 
+}) => {
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [expandedSku, setExpandedSku] = useState<string | null>(null);
+  const skuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const tabs: { key: TabType; label: string; count: number }[] = [
     { key: 'all', label: '全部', count: skus.length },
@@ -29,19 +39,58 @@ export const SkuRiskPanel: React.FC<SkuRiskPanelProps> = ({ skus, suppliers, onR
     ? skus 
     : skus.filter(s => s.riskLevel === activeTab);
 
+  useEffect(() => {
+    if (linkedSkuId) {
+      const sku = skus.find(s => s.id === linkedSkuId);
+      if (sku) {
+        if (activeTab !== 'all' && activeTab !== sku.riskLevel) {
+          setActiveTab(sku.riskLevel);
+        }
+        setExpandedSku(linkedSkuId);
+        
+        setTimeout(() => {
+          const element = skuRefs.current[linkedSkuId];
+          const container = containerRef.current;
+          if (element && container) {
+            const containerRect = container.getBoundingClientRect();
+            const elementRect = element.getBoundingClientRect();
+            const offsetTop = elementRect.top - containerRect.top + container.scrollTop - 20;
+            container.scrollTo({ top: offsetTop, behavior: 'smooth' });
+          }
+        }, 100);
+      }
+    }
+  }, [linkedSkuId, skus, activeTab]);
+
   const toggleExpand = (skuId: string) => {
-    setExpandedSku(expandedSku === skuId ? null : skuId);
+    const newValue = expandedSku === skuId ? null : skuId;
+    setExpandedSku(newValue);
+    if (newValue) {
+      onSkuSelect?.(skuId);
+    }
+  };
+
+  const handleRowClick = (skuId: string) => {
+    toggleExpand(skuId);
   };
 
   return (
     <Card hover={false} className="col-span-2">
       <CardHeader 
         title="SKU 风险监控" 
-        subtitle="实时监控库存风险状态"
+        subtitle={linkedSkuId ? `已联动选中: ${skus.find(s => s.id === linkedSkuId)?.name || ''}` : "实时监控库存风险状态，点击可联动补货建议"}
         action={
-          <Button variant="ghost" size="sm">
-            导出报表
-          </Button>
+          <div className="flex items-center space-x-2">
+            {linkedSkuId && (
+              <Badge variant="info" className="flex items-center">
+                <Link2 className="w-3 h-3 mr-1" />
+                联动中
+              </Badge>
+            )}
+            <Button variant="ghost" size="sm">
+              导出报表
+            </Button>
+          </div>
         }
       />
 
@@ -65,29 +114,40 @@ export const SkuRiskPanel: React.FC<SkuRiskPanelProps> = ({ skus, suppliers, onR
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200">
-        <div className="max-h-96 overflow-y-auto">
+        <div ref={containerRef} className="max-h-96 overflow-y-auto">
           {filteredSkus.map((sku, index) => {
             const supplier = getSupplierById(sku.supplierId);
             const isExpanded = expandedSku === sku.id;
             const isZeroStock = sku.currentStock === 0;
             const hasNoSupplier = !sku.supplierId;
+            const isLinked = linkedSkuId === sku.id;
 
             return (
               <div
                 key={sku.id}
-                className={`border-b border-gray-100 last:border-b-0 ${
+                ref={(el) => { skuRefs.current[sku.id] = el; }}
+                className={`border-b border-gray-100 last:border-b-0 transition-all duration-300 ${
                   isZeroStock ? 'bg-red-50/50' : hasNoSupplier ? 'bg-amber-50/50' : ''
+                } ${
+                  isLinked ? 'ring-2 ring-blue-500 ring-inset bg-blue-50/50 shadow-inner' : ''
                 }`}
               >
                 <div
-                  className="flex items-center p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => toggleExpand(sku.id)}
+                  className={`flex items-center p-4 cursor-pointer hover:bg-gray-50 transition-colors relative ${
+                    isLinked ? 'bg-blue-50/80' : ''
+                  }`}
+                  onClick={() => handleRowClick(sku.id)}
                 >
+                  {isLinked && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r" />
+                  )}
                   <div className="flex-1 grid grid-cols-6 gap-4 items-center">
                     <div className="col-span-2">
                       <div className="flex items-center space-x-2">
-                        <Package className="w-4 h-4 text-gray-400" />
-                        <span className="font-medium text-gray-800">{sku.name}</span>
+                        <Package className={`w-4 h-4 ${isLinked ? 'text-blue-500' : 'text-gray-400'}`} />
+                        <span className={`font-medium ${isLinked ? 'text-blue-700' : 'text-gray-800'}`}>
+                          {sku.name}
+                        </span>
                         {isZeroStock && (
                           <Badge variant="danger" pulse>
                             库存为0
@@ -98,13 +158,19 @@ export const SkuRiskPanel: React.FC<SkuRiskPanelProps> = ({ skus, suppliers, onR
                             无供应商
                           </Badge>
                         )}
+                        {isLinked && (
+                          <Badge variant="info" className="flex items-center">
+                            <Link2 className="w-3 h-3 mr-1" />
+                            联动
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5">{sku.code}</p>
                     </div>
 
                     <div className="text-center">
                       <p className={`text-lg font-bold ${
-                        isZeroStock ? 'text-red-600' : 'text-gray-800'
+                        isZeroStock ? 'text-red-600' : isLinked ? 'text-blue-600' : 'text-gray-800'
                       }`}>
                         {sku.currentStock}
                       </p>
@@ -167,6 +233,15 @@ export const SkuRiskPanel: React.FC<SkuRiskPanelProps> = ({ skus, suppliers, onR
                               <span className="text-gray-500">准时率</span>
                               <span className="font-medium">{supplier.onTimeRate}%</span>
                             </div>
+                            {supplier.lastCommunication && (
+                              <div className="mt-3 pt-3 border-t border-gray-100">
+                                <p className="text-xs text-gray-500 mb-1">最近沟通</p>
+                                <p className="text-sm text-gray-700">{supplier.lastCommunication.subject}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                  {supplier.lastCommunication.date} · {supplier.lastCommunication.operator}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <div className="text-center py-4">
@@ -199,6 +274,30 @@ export const SkuRiskPanel: React.FC<SkuRiskPanelProps> = ({ skus, suppliers, onR
                             <span className="text-gray-500">上次补货</span>
                             <span className="font-medium">{sku.lastRestockDate}</span>
                           </div>
+                          {supplier?.inTransitShipments && supplier.inTransitShipments.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-100">
+                              <p className="text-xs text-gray-500 mb-2">在途订单</p>
+                              {supplier.inTransitShipments.slice(0, 1).map(shipment => (
+                                <div key={shipment.id} className="bg-blue-50 rounded p-2">
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">{shipment.skuName}</span>
+                                    <Badge variant={
+                                      shipment.status === 'delayed' ? 'danger' :
+                                      shipment.status === 'in-transit' ? 'info' : 'success'
+                                    }>
+                                      {shipment.status === 'in-transit' ? '运输中' :
+                                       shipment.status === 'shipped' ? '已发货' :
+                                       shipment.status === 'delayed' ? '延迟' :
+                                       shipment.status === 'pending' ? '待发货' : '已送达'}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    预计到货: {shipment.estimatedArrivalDate}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           <Button 
                             variant={isZeroStock ? 'danger' : 'primary'} 
                             size="sm"
