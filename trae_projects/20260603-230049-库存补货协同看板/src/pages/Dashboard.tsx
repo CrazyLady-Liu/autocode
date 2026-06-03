@@ -1,22 +1,53 @@
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, AlertCircle, Package, Users, TrendingUp } from 'lucide-react';
+import {
+  ArrowRight,
+  AlertCircle,
+  Package,
+  Users,
+  TrendingUp,
+  MessageSquare,
+  Truck,
+  Phone,
+  Mail,
+  Calendar,
+  Clock,
+  MapPin,
+} from 'lucide-react';
 import ReactECharts from 'echarts-for-react';
 import KPICard from '@/components/common/KPICard';
 import StatusBadge from '@/components/common/StatusBadge';
 import RiskTag from '@/components/common/RiskTag';
 import { useInventoryStore } from '@/store/useInventoryStore';
 import { useSupplierStore } from '@/store/useSupplierStore';
-import { formatCurrency, formatRelativeTime, truncateText } from '@/utils/formatters';
+import {
+  formatCurrency,
+  formatRelativeTime,
+  truncateText,
+  formatDate,
+} from '@/utils/formatters';
 import { getRiskLevelColor } from '@/utils/riskCalculator';
+import {
+  getCommunicationStatusColor,
+  getCommunicationStatusText,
+  getArrivalStatusColor,
+  getArrivalStatusText,
+} from '@/data/mockSupplierCollab';
+import type { CommunicationType } from '@/types';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { getKPIs, alerts, suggestions, warehouses, skusWithRisk, isLoading } = useInventoryStore();
-  const { suppliers, getTopSuppliers } = useSupplierStore();
+  const { suppliers, getTopSuppliers, communications, expectedArrivals } = useSupplierStore();
 
   const kpis = getKPIs();
   const topSuppliers = getTopSuppliers(5);
+  const recentCommunications = [...communications]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 4);
+  const upcomingArrivals = [...expectedArrivals]
+    .sort((a, b) => new Date(a.expectedDate).getTime() - new Date(b.expectedDate).getTime())
+    .slice(0, 4);
 
   const riskDistributionOption = {
     tooltip: { trigger: 'item' },
@@ -99,6 +130,21 @@ export default function Dashboard() {
   };
 
   const newAlerts = alerts.filter(a => a.status === 'new').slice(0, 5);
+
+  const getCommunicationIcon = (type: CommunicationType) => {
+    switch (type) {
+      case 'email':
+        return <Mail className="w-4 h-4" />;
+      case 'phone':
+        return <Phone className="w-4 h-4" />;
+      case 'meeting':
+        return <Users className="w-4 h-4" />;
+      case 'system':
+        return <AlertCircle className="w-4 h-4" />;
+      default:
+        return <MessageSquare className="w-4 h-4" />;
+    }
+  };
 
   if (isLoading) {
     return (
@@ -327,6 +373,186 @@ export default function Dashboard() {
                 <StatusBadge status={suggestion.status} size="sm" />
               </div>
             ))}
+          </div>
+        </motion.div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="bg-slate-800/50 border border-slate-700 rounded-xl p-5"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-white font-semibold flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-blue-400" />
+              最近沟通记录
+            </h3>
+            <button
+              onClick={() => navigate('/suppliers')}
+              className="text-blue-400 text-sm hover:text-blue-300 flex items-center gap-1"
+            >
+              全部 <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {recentCommunications.length === 0 ? (
+              <p className="text-slate-400 text-sm text-center py-8">暂无沟通记录</p>
+            ) : (
+              recentCommunications.map((comm, index) => (
+                <motion.div
+                  key={comm.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.9 + index * 0.1 }}
+                  className="p-3 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer border border-transparent hover:border-slate-600"
+                  onClick={() => navigate('/suppliers')}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{
+                        backgroundColor: `${getCommunicationStatusColor(comm.status)}20`,
+                        color: getCommunicationStatusColor(comm.status),
+                      }}
+                    >
+                      {getCommunicationIcon(comm.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-white text-sm font-medium truncate">
+                          {comm.subject}
+                        </span>
+                        <span
+                          className="px-2 py-0.5 rounded text-xs flex-shrink-0"
+                          style={{
+                            backgroundColor: `${getCommunicationStatusColor(comm.status)}20`,
+                            color: getCommunicationStatusColor(comm.status),
+                          }}
+                        >
+                          {getCommunicationStatusText(comm.status)}
+                        </span>
+                      </div>
+                      <p className="text-slate-400 text-xs mb-1">
+                        {truncateText(comm.supplierName, 12)} · {comm.author}
+                      </p>
+                      <p className="text-slate-300 text-xs line-clamp-2">
+                        {comm.content}
+                      </p>
+                      <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatRelativeTime(comm.createdAt)}
+                        </span>
+                        {comm.followUpDate && (
+                          <span className="flex items-center gap-1 text-blue-400">
+                            <Calendar className="w-3 h-3" />
+                            跟进: {formatDate(comm.followUpDate)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          className="bg-slate-800/50 border border-slate-700 rounded-xl p-5"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-white font-semibold flex items-center gap-2">
+              <Truck className="w-5 h-5 text-emerald-400" />
+              预计到货时间
+            </h3>
+            <button
+              onClick={() => navigate('/replenishment')}
+              className="text-blue-400 text-sm hover:text-blue-300 flex items-center gap-1"
+            >
+              全部 <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {upcomingArrivals.length === 0 ? (
+              <p className="text-slate-400 text-sm text-center py-8">暂无到货计划</p>
+            ) : (
+              upcomingArrivals.map((arrival, index) => (
+                <motion.div
+                  key={arrival.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 1.0 + index * 0.1 }}
+                  className="p-3 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer border border-transparent hover:border-slate-600"
+                  onClick={() => navigate('/replenishment')}
+                >
+                  <div className="flex items-start gap-3">
+                    <div
+                      className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{
+                        backgroundColor: `${getArrivalStatusColor(arrival.status)}20`,
+                        color: getArrivalStatusColor(arrival.status),
+                      }}
+                    >
+                      <Package className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-white text-sm font-medium truncate">
+                          {arrival.skuName}
+                        </span>
+                        <span
+                          className="px-2 py-0.5 rounded text-xs flex-shrink-0"
+                          style={{
+                            backgroundColor: `${getArrivalStatusColor(arrival.status)}20`,
+                            color: getArrivalStatusColor(arrival.status),
+                          }}
+                        >
+                          {getArrivalStatusText(arrival.status)}
+                        </span>
+                      </div>
+                      <p className="text-slate-400 text-xs mb-2">
+                        {truncateText(arrival.supplierName, 12)} · 订单 {arrival.orderId}
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex items-center gap-1 text-slate-400">
+                          <Calendar className="w-3 h-3" />
+                          预计: <span className="text-slate-200">{formatDate(arrival.expectedDate)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-400">
+                          <Package className="w-3 h-3" />
+                          数量: <span className="text-slate-200">{arrival.quantity.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-400">
+                          <MapPin className="w-3 h-3" />
+                          仓库: <span className="text-slate-200">{arrival.warehouse}</span>
+                        </div>
+                        {arrival.adjustedDate && (
+                          <div
+                            className={`flex items-center gap-1 ${
+                              arrival.status === 'delayed' ? 'text-red-400' : 'text-amber-400'
+                            }`}
+                          >
+                            <Clock className="w-3 h-3" />
+                            调整: {formatDate(arrival.adjustedDate)}
+                          </div>
+                        )}
+                      </div>
+                      {arrival.trackingNumber && (
+                        <p className="text-xs text-slate-500 mt-2">
+                          运单号: {arrival.trackingNumber}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
           </div>
         </motion.div>
       </div>

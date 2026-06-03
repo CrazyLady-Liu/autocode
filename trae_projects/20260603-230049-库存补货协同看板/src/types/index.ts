@@ -151,3 +151,35 @@ export interface AlertAggregation {
   count: number;
   skuIds: string[];
 }
+
+export type CommunicationType = 'email' | 'phone' | 'meeting' | 'system';
+export type CommunicationStatus = 'pending' | 'completed' | 'followup' | 'resolved';
+
+export interface CommunicationRecord {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  type: CommunicationType;
+  status: CommunicationStatus;
+  subject: string;
+  content: string;
+  author: string;
+  createdAt: string;
+  followUpDate?: string;
+  relatedOrderId?: string;
+}
+
+export interface ExpectedArrival {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  orderId: string;
+  skuName: string;
+  quantity: number;
+  expectedDate: string;
+  adjustedDate?: string;
+  status: 'in-transit' | 'delayed' | 'arrived-today' | 'on-schedule' | 'early';
+  warehouse: string;
+  trackingNumber?: string;
+}
+

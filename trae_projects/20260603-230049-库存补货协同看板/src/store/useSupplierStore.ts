@@ -1,10 +1,13 @@
 import { create } from 'zustand';
-import type { Supplier, DeliveryRecord } from '@/types';
+import type { Supplier, DeliveryRecord, CommunicationRecord, ExpectedArrival } from '@/types';
 import { mockSuppliers, mockDeliveryRecords } from '@/data/mockSuppliers';
+import { mockCommunications, mockExpectedArrivals } from '@/data/mockSupplierCollab';
 
 interface SupplierState {
   suppliers: Supplier[];
   deliveryRecords: DeliveryRecord[];
+  communications: CommunicationRecord[];
+  expectedArrivals: ExpectedArrival[];
   selectedSupplierId: string | null;
   isLoading: boolean;
   
@@ -13,11 +16,15 @@ interface SupplierState {
   getSupplierById: (id: string) => Supplier | undefined;
   getRecordsBySupplier: (supplierId: string) => DeliveryRecord[];
   getTopSuppliers: (limit: number) => Supplier[];
+  getCommunicationsBySupplier: (supplierId: string) => CommunicationRecord[];
+  getPendingCommunications: () => CommunicationRecord[];
 }
 
 export const useSupplierStore = create<SupplierState>((set, get) => ({
   suppliers: [],
   deliveryRecords: [],
+  communications: [],
+  expectedArrivals: [],
   selectedSupplierId: null,
   isLoading: true,
 
@@ -27,6 +34,8 @@ export const useSupplierStore = create<SupplierState>((set, get) => ({
       set({
         suppliers: mockSuppliers,
         deliveryRecords: mockDeliveryRecords,
+        communications: mockCommunications,
+        expectedArrivals: mockExpectedArrivals,
         isLoading: false,
       });
     }, 300);
@@ -50,5 +59,13 @@ export const useSupplierStore = create<SupplierState>((set, get) => ({
         return b.onTimeRate - a.onTimeRate;
       })
       .slice(0, limit);
+  },
+
+  getCommunicationsBySupplier: (supplierId) => {
+    return get().communications.filter(c => c.supplierId === supplierId);
+  },
+
+  getPendingCommunications: () => {
+    return get().communications.filter(c => c.status === 'pending' || c.status === 'followup');
   },
 }));
