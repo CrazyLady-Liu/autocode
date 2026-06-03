@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ShieldCheck,
   ShieldX,
+  Target,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -54,6 +55,8 @@ export default function ApprovalFlow() {
     rejectNode,
     permissionViolation,
     clearPermissionViolation,
+    selectedNodeId,
+    selectNode,
   } = useApprovalStore();
 
   const flow = getSelectedFlow();
@@ -65,11 +68,20 @@ export default function ApprovalFlow() {
         <GitBranch className="w-12 h-12 mb-3 opacity-20" />
         <p className="text-sm">请从左侧选择一条申请</p>
         <p className="text-xs mt-1">审批流节点将在此展示</p>
+        <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+          <Target className="w-3 h-3" />
+          点击节点查看详情并联动操作记录
+        </p>
       </div>
     );
   }
 
   const hasUnassigned = flow.nodes.some((n) => n.status === "unassigned");
+
+  const handleNodeClick = (e: React.MouseEvent, nodeId: string) => {
+    e.stopPropagation();
+    selectNode(selectedNodeId === nodeId ? null : nodeId);
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -85,6 +97,10 @@ export default function ApprovalFlow() {
               缺审批人
             </span>
           )}
+          <span className="ml-auto text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+            <Target className="w-3 h-3" />
+            点击节点查看详情
+          </span>
         </div>
       </div>
 
@@ -116,18 +132,23 @@ export default function ApprovalFlow() {
             const canOperate = canOperateOnNode(node.role);
             const isPending = node.status === "pending";
             const isUnassigned = node.status === "unassigned";
+            const isSelected = selectedNodeId === node.id;
 
             return (
               <div key={node.id} className="flex items-start">
                 <div
                   className={clsx(
-                    "flex flex-col items-center w-36",
+                    "flex flex-col items-center w-36 cursor-pointer transition-all duration-200 p-2 rounded-lg",
+                    isSelected && "bg-amber-50 dark:bg-amber-950/30",
+                    !isSelected && "hover:bg-slate-50 dark:hover:bg-slate-800/50",
                     isUnassigned && "animate-[pulse_2s_ease-in-out_infinite]"
                   )}
+                  onClick={(e) => handleNodeClick(e, node.id)}
                 >
                   <div
                     className={clsx(
-                      "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all",
+                      "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all relative",
+                      isSelected && "ring-2 ring-amber-400 ring-offset-2 dark:ring-offset-slate-900 scale-110",
                       node.status === "approved" &&
                         "bg-emerald-50 dark:bg-emerald-950/50 border-emerald-500",
                       node.status === "rejected" &&
@@ -140,11 +161,21 @@ export default function ApprovalFlow() {
                         "bg-red-50 dark:bg-red-950/50 border-red-400 border-dashed"
                     )}
                   >
+                    {isSelected && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center animate-[bounce_1s_infinite]">
+                        <Target className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
                     <NodeIcon status={node.status} />
                   </div>
 
                   <div className="mt-2 text-center">
-                    <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                    <p className={clsx(
+                      "text-xs font-medium",
+                      isSelected
+                        ? "text-amber-700 dark:text-amber-300"
+                        : "text-slate-700 dark:text-slate-300"
+                    )}>
                       {node.role}
                     </p>
                     {node.assignee ? (
@@ -177,14 +208,20 @@ export default function ApprovalFlow() {
                   {isPending && canOperate && !isUnassigned && (
                     <div className="flex gap-1.5 mt-2">
                       <button
-                        onClick={() => approveNode(node.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          approveNode(node.id);
+                        }}
                         className="flex items-center gap-0.5 px-2 py-1 rounded text-[10px] font-medium bg-emerald-500 hover:bg-emerald-600 text-white transition-colors"
                       >
                         <ShieldCheck className="w-3 h-3" />
                         通过
                       </button>
                       <button
-                        onClick={() => rejectNode(node.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          rejectNode(node.id);
+                        }}
                         className="flex items-center gap-0.5 px-2 py-1 rounded text-[10px] font-medium bg-rose-500 hover:bg-rose-600 text-white transition-colors"
                       >
                         <ShieldX className="w-3 h-3" />
@@ -198,13 +235,20 @@ export default function ApprovalFlow() {
                       无权操作
                     </p>
                   )}
+
+                  {isSelected && (
+                    <p className="text-[10px] text-amber-500 mt-2 font-medium flex items-center justify-center gap-1">
+                      <Target className="w-3 h-3" />
+                      已选中
+                    </p>
+                  )}
                 </div>
 
                 {idx < flow.nodes.length - 1 && (
                   <div className="flex items-center self-center mt-[-2rem] mx-1">
                     <ChevronRight
                       className={clsx(
-                        "w-5 h-5",
+                        "w-5 h-5 transition-colors",
                         flow.nodes[idx + 1].status === "pending" ||
                         flow.nodes[idx + 1].status === "unassigned"
                           ? "text-slate-300 dark:text-slate-600"

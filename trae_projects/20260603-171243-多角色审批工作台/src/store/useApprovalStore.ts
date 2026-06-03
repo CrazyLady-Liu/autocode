@@ -26,6 +26,7 @@ interface ApprovalStore {
   users: CurrentUser[];
   roles: Role[];
   selectedApplicationId: string | null;
+  selectedNodeId: string | null;
   currentUser: CurrentUser;
   permissionViolation: string | null;
   statusFilter: ApplicationStatus | "all";
@@ -33,6 +34,7 @@ interface ApprovalStore {
   searchQuery: string;
 
   selectApplication: (id: string | null) => void;
+  selectNode: (nodeId: string | null) => void;
   switchUser: (userId: string) => void;
   approveNode: (nodeId: string) => void;
   rejectNode: (nodeId: string) => void;
@@ -44,7 +46,9 @@ interface ApprovalStore {
 
   getSelectedApplication: () => Application | undefined;
   getSelectedFlow: () => ApprovalFlow | undefined;
+  getSelectedNode: () => import("@/types").ApprovalNode | undefined;
   getSelectedRecords: () => OperationRecord[];
+  getNodeRelatedRecords: (nodeId: string) => OperationRecord[];
   getApplicationAlerts: (appId: string) => Alert[];
   getFilteredApplications: () => Application[];
   getCurrentRole: () => Role | undefined;
@@ -59,13 +63,16 @@ export const useApprovalStore = create<ApprovalStore>((set, get) => ({
   users: mockUsers,
   roles: mockRoles,
   selectedApplicationId: null,
+  selectedNodeId: null,
   currentUser: mockUsers[0],
   permissionViolation: null,
   statusFilter: "all",
   typeFilter: "all",
   searchQuery: "",
 
-  selectApplication: (id) => set({ selectedApplicationId: id, permissionViolation: null }),
+  selectApplication: (id) => set({ selectedApplicationId: id, selectedNodeId: null, permissionViolation: null }),
+
+  selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
 
   switchUser: (userId) => {
     const user = get().users.find((u) => u.id === userId);
@@ -158,6 +165,7 @@ export const useApprovalStore = create<ApprovalStore>((set, get) => ({
       applications: updatedApplications,
       records: [...state.records, newRecord],
       permissionViolation: null,
+      selectedNodeId: nodeId,
     });
   },
 
@@ -233,6 +241,7 @@ export const useApprovalStore = create<ApprovalStore>((set, get) => ({
       applications: updatedApplications,
       records: [...state.records, newRecord],
       permissionViolation: null,
+      selectedNodeId: nodeId,
     });
   },
 
@@ -261,12 +270,27 @@ export const useApprovalStore = create<ApprovalStore>((set, get) => ({
     return state.flows.find((f) => f.applicationId === app.id);
   },
 
+  getSelectedNode: () => {
+    const state = get();
+    if (!state.selectedNodeId) return undefined;
+    for (const flow of state.flows) {
+      const node = flow.nodes.find((n) => n.id === state.selectedNodeId);
+      if (node) return node;
+    }
+    return undefined;
+  },
+
   getSelectedRecords: () => {
     const state = get();
     if (!state.selectedApplicationId) return [];
     return state.records.filter(
       (r) => r.applicationId === state.selectedApplicationId
     );
+  },
+
+  getNodeRelatedRecords: (nodeId) => {
+    const state = get();
+    return state.records.filter((r) => r.nodeId === nodeId);
   },
 
   getApplicationAlerts: (appId) => {

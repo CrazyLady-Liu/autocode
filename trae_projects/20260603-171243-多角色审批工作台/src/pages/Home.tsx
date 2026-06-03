@@ -4,13 +4,14 @@ import RolePermission from "@/components/RolePermission";
 import OperationRecord from "@/components/OperationRecord";
 import StatisticsChart from "@/components/StatisticsChart";
 import AlertBanner from "@/components/AlertBanner";
+import NodeDetailPanel from "@/components/NodeDetailPanel";
 import { useApprovalStore } from "@/store/useApprovalStore";
 import { LayoutDashboard, Moon, Sun } from "lucide-react";
 import { clsx } from "clsx";
 import { useEffect, useState } from "react";
 
 export default function Home() {
-  const { currentUser, getCurrentRole } = useApprovalStore();
+  const { currentUser, getCurrentRole, selectedNodeId } = useApprovalStore();
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -73,7 +74,15 @@ export default function Home() {
               <div className="flex-shrink-0">
                 <ApprovalFlow />
               </div>
-              <div className="flex-1 min-h-0 border-t border-slate-200 dark:border-slate-700">
+              {selectedNodeId && (
+                <div className="h-80 flex-shrink-0 border-t border-slate-200 dark:border-slate-700 overflow-hidden">
+                  <NodeDetailPanel />
+                </div>
+              )}
+              <div className={clsx(
+                "flex-1 min-h-0 border-t border-slate-200 dark:border-slate-700",
+                !selectedNodeId && "border-t-0"
+              )}>
                 <OperationRecord />
               </div>
             </div>
